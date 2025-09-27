@@ -1,0 +1,30 @@
+{
+  "id": "modern_var_4",
+  "name": "Modern Variation 4",
+  "description": "Contemporary design with clean lines and modern typography",
+  "font_family": "Work Sans",
+  "font_size": 10,
+  "primary_color": "#374151",
+  "secondary_color": "#4b5563",
+  "accent_color": "#06b6d4",
+  "section_order": [
+    "Work",
+    "Education",
+    "Skills",
+    "Projects"
+  ],
+  "bullet_style": "square",
+  "spacing": "compact",
+  "header_style": "left_aligned",
+  "margins": {
+    "top": 40,
+    "bottom": 20,
+    "left": 30,
+    "right": 30
+  },
+  "line_height": 1.2,
+  "section_spacing": 8,
+  "category": "contemporary",
+  "base_template": "modern",
+  "variation_number": 4
+}

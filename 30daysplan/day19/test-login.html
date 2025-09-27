@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Test Instructions</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .code { background: #f5f5f5; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .step { margin: 15px 0; padding: 10px; border-left: 3px solid #007bff; }
+    </style>
+</head>
+<body>
+    <h1>Login Test Instructions</h1>
+    
+    <div class="step">
+        <h3>Step 1: Open Browser Console</h3>
+        <p>Press F12 or right-click and select "Inspect" → "Console"</p>
+    </div>
+    
+    <div class="step">
+        <h3>Step 2: Navigate to Login Page</h3>
+        <p>Go to: <a href="http://localhost:5173/login" target="_blank">http://localhost:5173/login</a></p>
+    </div>
+    
+    <div class="step">
+        <h3>Step 3: Run Test Script</h3>
+        <p>Copy and paste this code into the browser console:</p>
+        <div class="code">
+// Test login functionality<br>
+function testLogin() {<br>
+&nbsp;&nbsp;const emailInput = document.querySelector('input[type="email"]');<br>
+&nbsp;&nbsp;const passwordInput = document.querySelector('input[type="password"]');<br>
+&nbsp;&nbsp;const submitButton = document.querySelector('button[type="submit"]');<br>
+<br>
+&nbsp;&nbsp;if (emailInput && passwordInput && submitButton) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;console.log('🔍 Found login form elements');<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;// Fill in credentials<br>
+&nbsp;&nbsp;&nbsp;&nbsp;emailInput.value = 'testuser@gmail.com';<br>
+&nbsp;&nbsp;&nbsp;&nbsp;passwordInput.value = 'TestPassword123!';<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;// Trigger React events<br>
+&nbsp;&nbsp;&nbsp;&nbsp;emailInput.dispatchEvent(new Event('input', { bubbles: true }));<br>
+&nbsp;&nbsp;&nbsp;&nbsp;passwordInput.dispatchEvent(new Event('input', { bubbles: true }));<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;console.log('✅ Filled in credentials');<br>
+&nbsp;&nbsp;&nbsp;&nbsp;console.log('📧 Email:', emailInput.value);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;console.log('🔒 Password:', passwordInput.value ? '***' : 'empty');<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;// Submit form<br>
+&nbsp;&nbsp;&nbsp;&nbsp;setTimeout(() => {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;console.log('🚀 Submitting login form...');<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;submitButton.click();<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}, 500);<br>
+&nbsp;&nbsp;} else {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;console.error('❌ Login form elements not found');<br>
+&nbsp;&nbsp;&nbsp;&nbsp;console.log('Email input:', emailInput);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;console.log('Password input:', passwordInput);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;console.log('Submit button:', submitButton);<br>
+&nbsp;&nbsp;}<br>
+}<br>
+<br>
+// Run the test<br>
+testLogin();
+        </div>
+    </div>
+    
+    <div class="step">
+        <h3>Step 4: Watch Console Output</h3>
+        <p>Monitor the console for login results and any error messages.</p>
+    </div>
+    
+    <div class="step">
+        <h3>Expected Results</h3>
+        <ul>
+            <li>✅ Login should succeed</li>
+            <li>🔄 Should redirect to home page or intended destination</li>
+            <li>🛡️ Protected routes should now be accessible</li>
+        </ul>
+    </div>
+</body>
+</html>

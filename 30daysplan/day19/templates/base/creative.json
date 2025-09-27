@@ -1,0 +1,23 @@
+{
+  "id": "creative",
+  "name": "Creative",
+  "description": "Bold and artistic design for creative professionals",
+  "font_family": "Montserrat",
+  "font_size": 11,
+  "primary_color": "#374151",
+  "secondary_color": "#9ca3af",
+  "accent_color": "#f59e0b",
+  "section_order": ["Projects", "Skills", "Work", "Education"],
+  "bullet_style": "square",
+  "spacing": "relaxed",
+  "header_style": "creative_banner",
+  "margins": {
+    "top": 45,
+    "bottom": 45,
+    "left": 40,
+    "right": 40
+  },
+  "line_height": 1.5,
+  "section_spacing": 20,
+  "category": "artistic"
+}

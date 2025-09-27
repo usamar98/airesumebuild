@@ -1,0 +1,23 @@
+{
+  "id": "corporate",
+  "name": "Corporate",
+  "description": "Formal and structured layout for executive positions",
+  "font_family": "Open Sans",
+  "font_size": 12,
+  "primary_color": "#000000",
+  "secondary_color": "#4b5563",
+  "accent_color": "#1e40af",
+  "section_order": ["Work", "Education", "Skills", "Projects"],
+  "bullet_style": "dash",
+  "spacing": "normal",
+  "header_style": "formal",
+  "margins": {
+    "top": 40,
+    "bottom": 40,
+    "left": 45,
+    "right": 45
+  },
+  "line_height": 1.4,
+  "section_spacing": 18,
+  "category": "formal"
+}

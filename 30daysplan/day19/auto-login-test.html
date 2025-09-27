@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auto Login Test</title>
+</head>
+<body>
+    <h1>Auto Login Test</h1>
+    <p>This page will automatically redirect to the login page and test the login functionality.</p>
+    <div id="status">Initializing...</div>
+    
+    <script>
+        // Redirect to login page and inject test script
+        document.getElementById('status').textContent = 'Redirecting to login page...';
+        
+        setTimeout(() => {
+            window.location.href = 'http://localhost:5173/login';
+        }, 1000);
+        
+        // If we're already on the login page, run the test
+        if (window.location.href.includes('/login')) {
+            // Test script to automatically login with test credentials
+            (function() {
+                console.log('🧪 Starting automated login test...');
+                
+                // Wait for page to load
+                setTimeout(() => {
+                    // Find email and password inputs
+                    const emailInput = document.querySelector('input[type="email"]');
+                    const passwordInput = document.querySelector('input[type="password"]');
+                    const submitButton = document.querySelector('button[type="submit"]');
+                    
+                    if (!emailInput || !passwordInput || !submitButton) {
+                        console.error('❌ Login form elements not found');
+                        console.log('Available inputs:', document.querySelectorAll('input'));
+                        console.log('Available buttons:', document.querySelectorAll('button'));
+                        return;
+                    }
+                    
+                    console.log('✅ Found login form elements');
+                    
+                    // Fill in test credentials
+                    emailInput.value = 'testuser@gmail.com';
+                    passwordInput.value = 'TestPassword123!';
+                    
+                    // Trigger React state updates
+                    emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    emailInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    passwordInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    
+                    console.log('📝 Filled in credentials:', {
+                        email: emailInput.value,
+                        password: '***' + passwordInput.value.slice(-3)
+                    });
+                    
+                    // Wait a bit then submit
+                    setTimeout(() => {
+                        console.log('🚀 Submitting login form...');
+                        submitButton.click();
+                        
+                        // Monitor for success/error
+                        setTimeout(() => {
+                            const currentUrl = window.location.href;
+                            console.log('📍 Current URL after login attempt:', currentUrl);
+                            
+                            if (currentUrl.includes('/resume-builder') || currentUrl.includes('/dashboard')) {
+                                console.log('✅ Login successful - redirected to protected page');
+                            } else if (currentUrl.includes('/login')) {
+                                console.log('❌ Login failed - still on login page');
+                                // Check for error messages
+                                const errorElements = document.querySelectorAll('[class*="error"], [class*="alert"], .text-red-500');
+                                if (errorElements.length > 0) {
+                                    console.log('Error messages found:', Array.from(errorElements).map(el => el.textContent));
+                                }
+                            } else {
+                                console.log('🤔 Unexpected redirect to:', currentUrl);
+                            }
+                        }, 3000);
+                    }, 1000);
+                }, 1000);
+            })();
+        }
+    </script>
+</body>
+</html>

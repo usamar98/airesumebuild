@@ -1,0 +1,30 @@
+{
+  "id": "creative_var_4",
+  "name": "Creative Variation 4",
+  "description": "Bold and artistic design for creative professionals",
+  "font_family": "Nunito Sans",
+  "font_size": 12,
+  "primary_color": "#1f2937",
+  "secondary_color": "#64748b",
+  "accent_color": "#06b6d4",
+  "section_order": [
+    "Work",
+    "Education",
+    "Skills",
+    "Projects"
+  ],
+  "bullet_style": "dash",
+  "spacing": "wide",
+  "header_style": "creative_banner",
+  "margins": {
+    "top": 55,
+    "bottom": 35,
+    "left": 45,
+    "right": 45
+  },
+  "line_height": 1.4,
+  "section_spacing": 16,
+  "category": "artistic",
+  "base_template": "creative",
+  "variation_number": 4
+}

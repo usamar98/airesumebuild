@@ -1,0 +1,30 @@
+{
+  "id": "designer_var_4",
+  "name": "Designer Variation 4",
+  "description": "Stylish and visual layout for design and creative professionals",
+  "font_family": "Open Sans",
+  "font_size": 10,
+  "primary_color": "#0f172a",
+  "secondary_color": "#555555",
+  "accent_color": "#dc2626",
+  "section_order": [
+    "Projects",
+    "Skills",
+    "Work",
+    "Education"
+  ],
+  "bullet_style": "square",
+  "spacing": "normal",
+  "header_style": "designer",
+  "margins": {
+    "top": 30,
+    "bottom": 30,
+    "left": 45,
+    "right": 45
+  },
+  "line_height": 1.4,
+  "section_spacing": 22,
+  "category": "creative",
+  "base_template": "designer",
+  "variation_number": 4
+}

@@ -1,0 +1,30 @@
+{
+  "id": "tech_var_4",
+  "name": "Tech Leader",
+  "description": "Dynamic design for tech leaders",
+  "font_family": "Poppins",
+  "font_size": 11,
+  "primary_color": "#232f34",
+  "secondary_color": "#344955",
+  "accent_color": "#f9a825",
+  "section_order": [
+    "Education",
+    "Skills",
+    "Projects",
+    "Work"
+  ],
+  "bullet_style": "circle",
+  "spacing": "normal",
+  "header_style": "tech_modern",
+  "margins": {
+    "top": 30,
+    "bottom": 30,
+    "left": 30,
+    "right": 30
+  },
+  "line_height": 1.3,
+  "section_spacing": 15,
+  "category": "technology",
+  "base_template": "tech",
+  "variation_number": 4
+}
