@@ -1,0 +1,23 @@
+{
+  "id": "minimalist",
+  "name": "Minimalist",
+  "description": "Clean and simple design with maximum white space",
+  "font_family": "Lato",
+  "font_size": 12,
+  "primary_color": "#111827",
+  "secondary_color": "#9ca3af",
+  "accent_color": "#6366f1",
+  "section_order": ["Work", "Education", "Skills", "Projects"],
+  "bullet_style": "none",
+  "spacing": "wide",
+  "header_style": "minimal",
+  "margins": {
+    "top": 60,
+    "bottom": 60,
+    "left": 50,
+    "right": 50
+  },
+  "line_height": 1.6,
+  "section_spacing": 24,
+  "category": "minimal"
+}

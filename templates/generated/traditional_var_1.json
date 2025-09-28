@@ -1,0 +1,30 @@
+{
+  "id": "traditional_var_1",
+  "name": "Traditional Variation 1",
+  "description": "Classic and conservative design for traditional industries",
+  "font_family": "Inter",
+  "font_size": 13,
+  "primary_color": "#0f172a",
+  "secondary_color": "#4b5563",
+  "accent_color": "#059669",
+  "section_order": [
+    "Work",
+    "Skills",
+    "Education",
+    "Projects"
+  ],
+  "bullet_style": "none",
+  "spacing": "wide",
+  "header_style": "traditional",
+  "margins": {
+    "top": 35,
+    "bottom": 55,
+    "left": 45,
+    "right": 55
+  },
+  "line_height": 1.5,
+  "section_spacing": 12,
+  "category": "classic",
+  "base_template": "traditional",
+  "variation_number": 1
+}

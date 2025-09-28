@@ -1,0 +1,30 @@
+{
+  "id": "tech_var_3",
+  "name": "Tech Master",
+  "description": "Minimalist design for senior tech experts",
+  "font_family": "Montserrat",
+  "font_size": 11,
+  "primary_color": "#2b3a67",
+  "secondary_color": "#adb5bd",
+  "accent_color": "#6c757d",
+  "section_order": [
+    "Work",
+    "Skills",
+    "Education",
+    "Projects"
+  ],
+  "bullet_style": "square",
+  "spacing": "compact",
+  "header_style": "tech_modern",
+  "margins": {
+    "top": 25,
+    "bottom": 25,
+    "left": 35,
+    "right": 35
+  },
+  "line_height": 1.3,
+  "section_spacing": 14,
+  "category": "technology",
+  "base_template": "tech",
+  "variation_number": 3
+}

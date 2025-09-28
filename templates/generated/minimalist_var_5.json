@@ -1,0 +1,30 @@
+{
+  "id": "minimalist_var_5",
+  "name": "Minimalist Variation 5",
+  "description": "Clean and simple design with maximum white space",
+  "font_family": "Work Sans",
+  "font_size": 13,
+  "primary_color": "#1e293b",
+  "secondary_color": "#525252",
+  "accent_color": "#10b981",
+  "section_order": [
+    "Work",
+    "Education",
+    "Skills",
+    "Projects"
+  ],
+  "bullet_style": "circle",
+  "spacing": "normal",
+  "header_style": "minimal",
+  "margins": {
+    "top": 50,
+    "bottom": 70,
+    "left": 45,
+    "right": 45
+  },
+  "line_height": 1.5,
+  "section_spacing": 28,
+  "category": "minimal",
+  "base_template": "minimalist",
+  "variation_number": 5
+}

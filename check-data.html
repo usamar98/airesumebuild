@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resume Data Debug</title>
+</head>
+<body>
+    <h1>Resume Data Debug</h1>
+    <div id="output"></div>
+    
+    <script>
+        function debugResumeData() {
+            const output = document.getElementById('output');
+            
+            // Get localStorage data
+            const resumeDataStr = localStorage.getItem('resumeData');
+            let resumeData = null;
+            
+            try {
+                resumeData = JSON.parse(resumeDataStr || '{}');
+            } catch (e) {
+                output.innerHTML += '<p><strong>Error parsing localStorage:</strong> ' + e.message + '</p>';
+                return;
+            }
+            
+            // Display personal info comparison
+            output.innerHTML += '<h2>Personal Info Data:</h2>';
+            output.innerHTML += '<pre>' + JSON.stringify(resumeData.personalInfo || {}, null, 2) + '</pre>';
+            
+            // Check what's missing
+            const personalInfo = resumeData.personalInfo || {};
+            output.innerHTML += '<h2>Field Analysis:</h2>';
+            output.innerHTML += '<p>Full Name: ' + (personalInfo.fullName || 'MISSING') + '</p>';
+            output.innerHTML += '<p>Email: ' + (personalInfo.email || 'MISSING') + '</p>';
+            output.innerHTML += '<p>Phone: ' + (personalInfo.phone || 'MISSING') + '</p>';
+            output.innerHTML += '<p>LinkedIn: ' + (personalInfo.linkedin || 'MISSING') + '</p>';
+            output.innerHTML += '<p>Address: ' + (personalInfo.address || 'MISSING') + '</p>';
+            
+            // Check other sections
+            output.innerHTML += '<h2>Other Sections:</h2>';
+            output.innerHTML += '<p>Work Experience: ' + (resumeData.workExperience?.length || 0) + ' items</p>';
+            output.innerHTML += '<p>Skills: ' + (resumeData.skills?.length || 0) + ' items</p>';
+            output.innerHTML += '<p>Education: ' + (resumeData.education?.length || 0) + ' items</p>';
+            output.innerHTML += '<p>Hobbies: ' + (resumeData.hobbies || 'MISSING') + '</p>';
+            
+            // Test PDF generation if available
+            if (window.generatePDF) {
+                output.innerHTML += '<h2>Testing PDF Generation:</h2>';
+                try {
+                    window.generatePDF();
+                    output.innerHTML += '<p>PDF generation initiated - check console for details</p>';
+                } catch (e) {
+                    output.innerHTML += '<p><strong>PDF Error:</strong> ' + e.message + '</p>';
+                }
+            }
+        }
+        
+        // Run debug when page loads
+        window.addEventListener('load', debugResumeData);
+    </script>
+</body>
+</html>

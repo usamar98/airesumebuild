@@ -1,0 +1,30 @@
+{
+  "id": "corporate_var_2",
+  "name": "Corporate Variation 2",
+  "description": "Formal and structured layout for executive positions",
+  "font_family": "Inter",
+  "font_size": 13,
+  "primary_color": "#1e293b",
+  "secondary_color": "#6b7280",
+  "accent_color": "#10b981",
+  "section_order": [
+    "Education",
+    "Work",
+    "Projects",
+    "Skills"
+  ],
+  "bullet_style": "none",
+  "spacing": "compact",
+  "header_style": "formal",
+  "margins": {
+    "top": 50,
+    "bottom": 30,
+    "left": 40,
+    "right": 50
+  },
+  "line_height": 1.2999999999999998,
+  "section_spacing": 22,
+  "category": "formal",
+  "base_template": "corporate",
+  "variation_number": 2
+}

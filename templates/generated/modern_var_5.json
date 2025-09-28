@@ -1,0 +1,30 @@
+{
+  "id": "modern_var_5",
+  "name": "Modern Variation 5",
+  "description": "Contemporary design with clean lines and modern typography",
+  "font_family": "Poppins",
+  "font_size": 12,
+  "primary_color": "#000000",
+  "secondary_color": "#6b7280",
+  "accent_color": "#dc2626",
+  "section_order": [
+    "Projects",
+    "Skills",
+    "Work",
+    "Education"
+  ],
+  "bullet_style": "none",
+  "spacing": "normal",
+  "header_style": "left_aligned",
+  "margins": {
+    "top": 20,
+    "bottom": 40,
+    "left": 30,
+    "right": 30
+  },
+  "line_height": 1.2,
+  "section_spacing": 8,
+  "category": "contemporary",
+  "base_template": "modern",
+  "variation_number": 5
+}

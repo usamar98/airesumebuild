@@ -1,0 +1,30 @@
+{
+  "id": "tech_var_2",
+  "name": "Tech Elite",
+  "description": "Sleek design for tech executives",
+  "font_family": "Lato",
+  "font_size": 11,
+  "primary_color": "#1b263b",
+  "secondary_color": "#6c757d",
+  "accent_color": "#28a745",
+  "section_order": [
+    "Skills",
+    "Work",
+    "Projects",
+    "Education"
+  ],
+  "bullet_style": "disc",
+  "spacing": "normal",
+  "header_style": "tech_modern",
+  "margins": {
+    "top": 35,
+    "bottom": 35,
+    "left": 30,
+    "right": 30
+  },
+  "line_height": 1.3,
+  "section_spacing": 15,
+  "category": "technology",
+  "base_template": "tech",
+  "variation_number": 2
+}

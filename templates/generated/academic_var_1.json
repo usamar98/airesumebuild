@@ -1,0 +1,30 @@
+{
+  "id": "academic_var_1",
+  "name": "Academic Pro",
+  "description": "Modern layout ideal for research and educational roles",
+  "font_family": "Roboto",
+  "font_size": 11,
+  "primary_color": "#0B3954",
+  "secondary_color": "#BFD7ED",
+  "accent_color": "#FF6B6B",
+  "section_order": [
+    "Education",
+    "Projects",
+    "Work",
+    "Skills"
+  ],
+  "bullet_style": "square",
+  "spacing": "relaxed",
+  "header_style": "academic",
+  "margins": {
+    "top": 30,
+    "bottom": 30,
+    "left": 35,
+    "right": 35
+  },
+  "line_height": 1.5,
+  "section_spacing": 20,
+  "category": "scholarly",
+  "base_template": "academic",
+  "variation_number": 1
+}
