@@ -219,13 +219,26 @@ router.post('/register', createRateLimiter(5, 15), registerValidation, async (re
   console.log(`[${requestId}] Registration attempt started for:`, req.body?.email);
   
   try {
-    // Log environment check
+    // Enhanced environment check for Railway debugging
     console.log(`[${requestId}] Environment check:`, {
       hasSupabaseUrl: !!process.env.SUPABASE_URL,
+      supabaseUrlValid: process.env.SUPABASE_URL?.includes('supabase.co'),
       hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      serviceKeyValid: process.env.SUPABASE_SERVICE_ROLE_KEY?.startsWith('eyJ'),
       hasFrontendUrl: !!process.env.FRONTEND_URL,
-      nodeEnv: process.env.NODE_ENV
+      frontendUrl: process.env.FRONTEND_URL,
+      nodeEnv: process.env.NODE_ENV,
+      isRailway: !!process.env.RAILWAY_ENVIRONMENT,
+      railwayEnv: process.env.RAILWAY_ENVIRONMENT,
+      port: process.env.PORT
     });
+    
+    // Validate critical environment variables
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error(`[${requestId}] Missing critical environment variables`);
+      res.status(500).json({ error: 'Server configuration error - missing database credentials' });
+      return;
+    }
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -241,9 +254,34 @@ router.post('/register', createRateLimiter(5, 15), registerValidation, async (re
     try {
       supabase = getSupabaseClient();
       console.log(`[${requestId}] Supabase client created successfully`);
-    } catch (clientError) {
-      console.error(`[${requestId}] Failed to create Supabase client:`, clientError);
-      res.status(500).json({ error: 'Database connection failed' });
+      
+      // Test basic connectivity
+      console.log(`[${requestId}] Testing Supabase connectivity...`);
+      const { data: healthCheck, error: healthError } = await supabase
+        .from('users')
+        .select('count')
+        .limit(1);
+      
+      if (healthError) {
+        console.error(`[${requestId}] Supabase connectivity test failed:`, {
+          message: healthError.message,
+          details: healthError.details,
+          hint: healthError.hint,
+          code: healthError.code
+        });
+        res.status(500).json({ error: 'Database connectivity test failed' });
+        return;
+      }
+      console.log(`[${requestId}] Supabase connectivity test passed`);
+      
+    } catch (clientError: any) {
+      console.error(`[${requestId}] Failed to create Supabase client:`, {
+        message: clientError.message,
+        stack: clientError.stack,
+        name: clientError.name,
+        cause: clientError.cause
+      });
+      res.status(500).json({ error: 'Database connection failed - check server configuration' });
       return;
     }
     
@@ -263,15 +301,35 @@ router.post('/register', createRateLimiter(5, 15), registerValidation, async (re
       console.error(`[${requestId}] Supabase auth error:`, {
         message: authError.message,
         status: authError.status,
-        details: authError
+        code: authError.code,
+        details: authError.details,
+        hint: authError.hint,
+        fullError: authError
       });
+      
+      // Enhanced error handling for Railway debugging
       if (authError.message.includes('already registered')) {
+        console.log(`[${requestId}] User already exists - this is expected behavior`);
         res.status(400).json({ 
           error: 'An account with this email already exists. Please use a different email or try logging in.' 
         });
         return;
       }
-      res.status(400).json({ error: authError.message || 'Registration failed' });
+      
+      if (authError.message.includes('Invalid API key') || authError.message.includes('JWT')) {
+        console.error(`[${requestId}] Authentication configuration error - check SUPABASE_SERVICE_ROLE_KEY`);
+        res.status(500).json({ error: 'Server authentication configuration error' });
+        return;
+      }
+      
+      if (authError.message.includes('permission') || authError.message.includes('policy')) {
+        console.error(`[${requestId}] Database permission error - check RLS policies`);
+        res.status(500).json({ error: 'Database permission configuration error' });
+        return;
+      }
+      
+      console.error(`[${requestId}] Unhandled auth error type:`, authError.message);
+      res.status(400).json({ error: authError.message || 'Registration failed - check server logs' });
       return;
     }
 
