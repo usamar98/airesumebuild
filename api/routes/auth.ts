@@ -4,12 +4,139 @@
  */
 import { Router, type Request, type Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { UserModel, CreateUserData, LoginCredentials } from '../models/User.js';
+import { createClient } from '@supabase/supabase-js';
 import { AnalyticsModel } from '../models/Analytics.js';
 import { authenticateSupabaseToken, requireAdmin, createRateLimiter, SupabaseAuthenticatedRequest } from '../middleware/supabaseAuth.js';
 import { emailService } from '../services/emailService.js';
 
+// Initialize Supabase client
+const getSupabaseClient = () => {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  console.log('Supabase client initialization:', {
+    hasUrl: !!supabaseUrl,
+    hasServiceKey: !!supabaseServiceKey,
+    urlLength: supabaseUrl?.length || 0,
+    keyLength: supabaseServiceKey?.length || 0
+  });
+  
+  if (!supabaseUrl || !supabaseServiceKey) {
+    const missingVars = [];
+    if (!supabaseUrl) missingVars.push('SUPABASE_URL');
+    if (!supabaseServiceKey) missingVars.push('SUPABASE_SERVICE_ROLE_KEY');
+    
+    console.error('Missing environment variables:', missingVars);
+    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+  }
+  
+  try {
+    const client = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('Supabase client created successfully');
+    return client;
+  } catch (error) {
+    console.error('Failed to create Supabase client:', error);
+    throw error;
+  }
+};
+
+export interface CreateUserData {
+  email: string;
+  password: string;
+  name: string;
+  role?: 'user' | 'admin';
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
 const router = Router();
+
+/**
+ * Railway Deployment Debug Endpoint
+ * GET /api/auth/debug
+ */
+router.get('/debug', async (req: Request, res: Response): Promise<void> => {
+  const debugInfo: any = {
+    timestamp: new Date().toISOString(),
+    environment: {
+      NODE_ENV: process.env.NODE_ENV,
+      PORT: process.env.PORT,
+      hasJwtSecret: !!process.env.JWT_SECRET,
+      jwtSecretLength: process.env.JWT_SECRET?.length || 0,
+      hasFrontendUrl: !!process.env.FRONTEND_URL,
+      frontendUrl: process.env.FRONTEND_URL,
+      hasSupabaseUrl: !!process.env.SUPABASE_URL,
+      supabaseUrl: process.env.SUPABASE_URL,
+      hasSupabaseServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      supabaseServiceKeyLength: process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0,
+      hasEmailHost: !!process.env.EMAIL_HOST,
+      emailHost: process.env.EMAIL_HOST,
+      hasEmailUser: !!process.env.EMAIL_USER,
+      emailUser: process.env.EMAIL_USER
+    },
+    supabaseConnection: null,
+    databaseTables: null,
+    errors: []
+  };
+
+  try {
+    // Test Supabase client creation
+    console.log('Debug: Testing Supabase client creation...');
+    const supabase = getSupabaseClient();
+    debugInfo.supabaseConnection = 'SUCCESS';
+    
+    // Test database connection
+    console.log('Debug: Testing database connection...');
+    const { data: healthCheck, error: healthError } = await supabase
+      .from('users')
+      .select('count')
+      .limit(1);
+    
+    if (healthError) {
+      debugInfo.errors.push(`Database connection error: ${healthError.message}`);
+      debugInfo.databaseTables = 'ERROR';
+    } else {
+      debugInfo.databaseTables = 'SUCCESS';
+    }
+    
+    // Test user table structure
+    console.log('Debug: Testing user table structure...');
+    const { data: tableInfo, error: tableError } = await supabase
+      .from('users')
+      .select('*')
+      .limit(0);
+    
+    if (tableError) {
+      debugInfo.errors.push(`User table error: ${tableError.message}`);
+    }
+    
+    // Test auth admin capabilities
+    console.log('Debug: Testing auth admin capabilities...');
+    try {
+      const { data: authTest, error: authError } = await supabase.auth.admin.listUsers({
+        page: 1,
+        perPage: 1
+      });
+      
+      if (authError) {
+        debugInfo.errors.push(`Auth admin error: ${authError.message}`);
+      } else {
+        debugInfo.authAdmin = 'SUCCESS';
+      }
+    } catch (authTestError: any) {
+      debugInfo.errors.push(`Auth admin test failed: ${authTestError.message}`);
+    }
+    
+  } catch (error: any) {
+    debugInfo.supabaseConnection = 'ERROR';
+    debugInfo.errors.push(`Supabase client error: ${error.message}`);
+  }
+
+  res.json(debugInfo);
+});
 
 // Validation rules
 const registerValidation = [
@@ -28,56 +155,150 @@ const loginValidation = [
  * POST /api/auth/register
  */
 router.post('/register', createRateLimiter(5, 15), registerValidation, async (req: Request, res: Response): Promise<void> => {
+  const requestId = Math.random().toString(36).substring(7);
+  console.log(`[${requestId}] Registration attempt started for:`, req.body?.email);
+  
   try {
+    // Log environment check
+    console.log(`[${requestId}] Environment check:`, {
+      hasSupabaseUrl: !!process.env.SUPABASE_URL,
+      hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      hasFrontendUrl: !!process.env.FRONTEND_URL,
+      nodeEnv: process.env.NODE_ENV
+    });
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log(`[${requestId}] Validation failed:`, errors.array());
       res.status(400).json({ error: 'Validation failed', details: errors.array() });
       return;
     }
 
     const { email, password, name } = req.body as CreateUserData;
+    console.log(`[${requestId}] Creating Supabase client...`);
     
-    // Check if user already exists
-    const existingUser = await UserModel.findByEmail(email);
-    if (existingUser) {
-      res.status(400).json({ 
-        error: 'An account with this email already exists. Please use a different email or try logging in.' 
-      });
+    let supabase;
+    try {
+      supabase = getSupabaseClient();
+      console.log(`[${requestId}] Supabase client created successfully`);
+    } catch (clientError) {
+      console.error(`[${requestId}] Failed to create Supabase client:`, clientError);
+      res.status(500).json({ error: 'Database connection failed' });
       return;
     }
     
-    const user = await UserModel.create({ email, password, name });
-    
-    // Generate verification token
-    const verificationToken = emailService.generateVerificationToken();
-    const tokenExpiry = emailService.generateTokenExpiry(24); // 24 hours
-    
-    // Save verification token to user
-    await UserModel.setEmailVerificationToken(user.id!, verificationToken, tokenExpiry);
-    
+    console.log(`[${requestId}] Attempting to create user with Supabase Auth...`);
+    // Create user with Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      user_metadata: {
+        name,
+        role: 'user'
+      },
+      email_confirm: false // Require email verification
+    });
+
+    if (authError) {
+      console.error(`[${requestId}] Supabase auth error:`, {
+        message: authError.message,
+        status: authError.status,
+        details: authError
+      });
+      if (authError.message.includes('already registered')) {
+        res.status(400).json({ 
+          error: 'An account with this email already exists. Please use a different email or try logging in.' 
+        });
+        return;
+      }
+      res.status(400).json({ error: authError.message || 'Registration failed' });
+      return;
+    }
+
+    if (!authData.user) {
+      console.error(`[${requestId}] No user data returned from Supabase`);
+      res.status(400).json({ error: 'Failed to create user account' });
+      return;
+    }
+
+    console.log(`[${requestId}] User created successfully, ID:`, authData.user.id);
+
+    // Create user profile in public.users table
+    console.log(`[${requestId}] Creating user profile in public.users table...`);
+    const { error: profileError } = await supabase
+      .from('users')
+      .insert({
+        id: authData.user.id,
+        email: authData.user.email,
+        name,
+        role: 'user'
+      });
+
+    if (profileError) {
+      console.error(`[${requestId}] Profile creation error:`, {
+        message: profileError.message,
+        details: profileError,
+        hint: profileError.hint
+      });
+      // Don't fail registration if profile creation fails
+    } else {
+      console.log(`[${requestId}] User profile created successfully`);
+    }
+
     // Send verification email
+    console.log(`[${requestId}] Attempting to send verification email...`);
     try {
-      await emailService.sendVerificationEmail(email, verificationToken, name);
+      const { error: emailError } = await supabase.auth.admin.generateLink({
+        type: 'signup',
+        email,
+        options: {
+          redirectTo: `${process.env.FRONTEND_URL}/auth/verify`
+        }
+      });
+      
+      if (emailError) {
+        console.error(`[${requestId}] Failed to generate verification email:`, emailError);
+      } else {
+        console.log(`[${requestId}] Verification email generated successfully`);
+      }
     } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
+      console.error(`[${requestId}] Failed to send verification email:`, emailError);
       // Continue with registration even if email fails
     }
 
     // Track registration event
-    await AnalyticsModel.trackEvent({
-      user_id: user.id,
-      feature_name: 'auth',
-      action: 'register',
-      metadata: JSON.stringify({ email, name })
-    });
+    console.log(`[${requestId}] Tracking registration event...`);
+    try {
+      await AnalyticsModel.trackEvent({
+        user_id: authData.user.id,
+        feature_name: 'auth',
+        action: 'register',
+        metadata: JSON.stringify({ email, name })
+      });
+      console.log(`[${requestId}] Analytics event tracked successfully`);
+    } catch (analyticsError) {
+      console.error(`[${requestId}] Analytics tracking error:`, analyticsError);
+    }
 
+    console.log(`[${requestId}] Registration completed successfully`);
     res.status(201).json({
       message: 'User registered successfully. Please check your email to verify your account.',
-      user
+      user: {
+        id: authData.user.id,
+        email: authData.user.email,
+        name,
+        role: 'user',
+        email_verified: false
+      }
     });
   } catch (error: any) {
-    console.error('Registration error:', error);
-    res.status(400).json({ error: error.message || 'Registration failed' });
+    console.error(`[${requestId}] Unexpected registration error:`, {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      cause: error.cause
+    });
+    res.status(500).json({ error: 'Internal server error during registration' });
   }
 });
 
@@ -85,7 +306,7 @@ router.post('/register', createRateLimiter(5, 15), registerValidation, async (re
  * User Login
  * POST /api/auth/login
  */
-router.post('/login', createRateLimiter(5, 15), loginValidation, async (req: Request, res: Response): Promise<void> => {
+router.post('/login', createRateLimiter(10, 15), loginValidation, async (req: Request, res: Response): Promise<void> => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -94,51 +315,96 @@ router.post('/login', createRateLimiter(5, 15), loginValidation, async (req: Req
     }
 
     const { email, password } = req.body as LoginCredentials;
+    const supabase = getSupabaseClient();
     
-    const user = await UserModel.findByEmail(email);
-    if (!user || !user.is_active) {
-      res.status(401).json({ error: 'Invalid email or password' });
+    // Authenticate with Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (authError) {
+      console.error('Supabase auth error:', authError);
+      if (authError.message.includes('Invalid login credentials')) {
+        res.status(401).json({ error: 'Invalid email or password' });
+        return;
+      }
+      res.status(401).json({ error: authError.message || 'Login failed' });
       return;
     }
 
-    const isValidPassword = await UserModel.comparePassword(password, user.password!);
-    if (!isValidPassword) {
-      res.status(401).json({ error: 'Invalid email or password' });
+    if (!authData.user || !authData.session) {
+      res.status(401).json({ error: 'Authentication failed' });
       return;
     }
 
-    // Check if email is verified
-    if (!user.email_verified) {
-      res.status(401).json({ 
-        error: 'Please verify your email address before logging in. Check your email for verification link.',
-        requiresVerification: true
-      });
-      return;
+    // Get user profile from public.users table
+    const { data: userProfile, error: profileError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', authData.user.id)
+      .single();
+
+    if (profileError) {
+      console.error('Profile fetch error:', profileError);
+      // Create profile if it doesn't exist
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: authData.user.id,
+          email: authData.user.email!,
+          name: authData.user.user_metadata?.name || 'User',
+          role: authData.user.user_metadata?.role || 'user'
+        });
+      
+      if (insertError) {
+        console.error('Profile creation error:', insertError);
+      }
     }
 
     // Update last login
-    await UserModel.updateLastLogin(user.id!);
-    
-    // Generate token
-    const { password: _, ...userWithoutPassword } = user;
-    const token = UserModel.generateToken(userWithoutPassword);
+    try {
+      await supabase
+        .from('users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', authData.user.id);
+    } catch (updateError) {
+      console.error('Last login update error:', updateError);
+    }
 
     // Track login event
-    await AnalyticsModel.trackEvent({
-      user_id: user.id,
-      feature_name: 'auth',
-      action: 'login',
-      metadata: JSON.stringify({ email })
-    });
+    try {
+      await AnalyticsModel.trackEvent({
+        user_id: authData.user.id,
+        feature_name: 'auth',
+        action: 'login',
+        metadata: JSON.stringify({ email })
+      });
+    } catch (analyticsError) {
+      console.error('Analytics tracking error:', analyticsError);
+    }
+
+    const profile = userProfile || {
+      id: authData.user.id,
+      email: authData.user.email,
+      name: authData.user.user_metadata?.name || 'User',
+      role: authData.user.user_metadata?.role || 'user'
+    };
 
     res.json({
       message: 'Login successful',
-      user: userWithoutPassword,
-      token
+      token: authData.session.access_token,
+      user: {
+        id: profile.id,
+        email: profile.email,
+        name: profile.name,
+        role: profile.role,
+        email_verified: authData.user.email_confirmed_at ? true : false
+      }
     });
   } catch (error: any) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    res.status(500).json({ error: 'Internal server error during login' });
   }
 });
 
@@ -148,14 +414,23 @@ router.post('/login', createRateLimiter(5, 15), loginValidation, async (req: Req
  */
 router.post('/logout', authenticateSupabaseToken, async (req: SupabaseAuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.id;
+    
     // Track logout event
-    await AnalyticsModel.trackEvent({
-      user_id: req.user!.id,
-      feature_name: 'auth',
-      action: 'logout'
-    });
+    if (userId) {
+      try {
+        await AnalyticsModel.trackEvent({
+          user_id: userId,
+          feature_name: 'auth',
+          action: 'logout',
+          metadata: JSON.stringify({ timestamp: new Date().toISOString() })
+        });
+      } catch (analyticsError) {
+        console.error('Analytics tracking error:', analyticsError);
+      }
+    }
 
-    res.json({ message: 'Logout successful' });
+    res.json({ message: 'Logged out successfully' });
   } catch (error: any) {
     console.error('Logout error:', error);
     res.status(500).json({ error: 'Logout failed' });
@@ -168,14 +443,28 @@ router.post('/logout', authenticateSupabaseToken, async (req: SupabaseAuthentica
  */
 router.get('/profile', authenticateSupabaseToken, async (req: SupabaseAuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const user = await UserModel.findById(req.user!.id);
-    if (!user) {
-      res.status(404).json({ error: 'User not found' });
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'User not authenticated' });
       return;
     }
 
-    const { password: _, ...userWithoutPassword } = user;
-    res.json({ user: userWithoutPassword });
+    const supabase = getSupabaseClient();
+    
+    // Get user profile from public.users table
+    const { data: userProfile, error: profileError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (profileError) {
+      console.error('Profile fetch error:', profileError);
+      res.status(404).json({ error: 'User profile not found' });
+      return;
+    }
+
+    res.json({ user: userProfile });
   } catch (error: any) {
     console.error('Profile error:', error);
     res.status(500).json({ error: 'Failed to fetch profile' });
@@ -183,12 +472,12 @@ router.get('/profile', authenticateSupabaseToken, async (req: SupabaseAuthentica
 });
 
 /**
- * Update user profile
+ * Update User Profile
  * PUT /api/auth/profile
  */
 router.put('/profile', authenticateSupabaseToken, [
-  body('name').optional().trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
-  body('email').optional().isEmail().normalizeEmail().withMessage('Valid email is required'),
+  body('name').optional().isLength({ min: 1 }).withMessage('Name must not be empty'),
+  body('email').optional().isEmail().withMessage('Must be a valid email')
 ], async (req: SupabaseAuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const errors = validationResult(req);
@@ -197,16 +486,69 @@ router.put('/profile', authenticateSupabaseToken, [
       return;
     }
 
-    const updates = req.body;
-    const updatedUser = await UserModel.updateUser(req.user!.id, updates);
-    
-    if (!updatedUser) {
-      res.status(404).json({ error: 'User not found' });
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'User not authenticated' });
       return;
     }
 
-    const { password: _, ...userWithoutPassword } = updatedUser;
-    res.json({ message: 'Profile updated successfully', user: userWithoutPassword });
+    const { name, email } = req.body;
+    const supabase = getSupabaseClient();
+    
+    if (email) {
+      // Check if email is already taken by another user
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .neq('id', userId)
+        .single();
+      
+      if (existingUser && !checkError) {
+        res.status(400).json({ error: 'Email is already taken by another user' });
+        return;
+      }
+    }
+
+    const updateData: any = { updated_at: new Date().toISOString() };
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+
+    // Update user profile in public.users table
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Profile update error:', updateError);
+      res.status(500).json({ error: 'Failed to update profile' });
+      return;
+    }
+
+    // If email is being updated, also update in Supabase Auth
+    if (email) {
+      try {
+        const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
+          userId,
+          { email }
+        );
+        
+        if (authUpdateError) {
+          console.error('Auth email update error:', authUpdateError);
+          // Don't fail the request if auth update fails
+        }
+      } catch (authError) {
+        console.error('Auth update error:', authError);
+      }
+    }
+
+    res.json({ 
+      message: 'Profile updated successfully',
+      user: updatedUser 
+    });
   } catch (error: any) {
     console.error('Profile update error:', error);
     res.status(500).json({ error: 'Failed to update profile' });
@@ -218,104 +560,145 @@ router.put('/profile', authenticateSupabaseToken, [
  * GET /api/auth/verify
  */
 router.get('/verify', authenticateSupabaseToken, async (req: SupabaseAuthenticatedRequest, res: Response): Promise<void> => {
-  res.json({ valid: true, user: req.user });
-});
-
-// Email verification route
-router.get('/verify-email/:token', async (req, res) => {
   try {
-    const { token } = req.params;
-    
-    const user = await UserModel.verifyEmail(token);
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid or expired verification token'
-      });
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
     }
+
+    const supabase = getSupabaseClient();
     
-    res.json({
-      success: true,
-      message: 'Email verified successfully. You can now log in.',
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        email_verified: user.email_verified
-      }
+    // Get user profile from public.users table
+    const { data: userProfile, error: profileError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (profileError) {
+      console.error('Profile fetch error:', profileError);
+      res.status(404).json({ error: 'User profile not found' });
+      return;
+    }
+
+    res.json({ 
+      valid: true, 
+      user: userProfile 
     });
-  } catch (error) {
-    console.error('Email verification error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
+  } catch (error: any) {
+    console.error('Token verification error:', error);
+    res.status(500).json({ error: 'Token verification failed' });
   }
 });
 
-// Resend verification email route
-router.post('/resend-verification',
-  createRateLimiter(5, 15),
-  [
-    body('email').isEmail().normalizeEmail()
-  ],
-  async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Validation failed', 
-          errors: errors.array() 
-        });
-      }
-
-      const { email } = req.body;
-      
-      const user = await UserModel.findByEmail(email);
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: 'User not found'
-        });
-      }
-      
-      if (user.email_verified) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email is already verified'
-        });
-      }
-      
-      // Generate new verification token
-      const verificationToken = emailService.generateVerificationToken();
-      const tokenExpiry = emailService.generateTokenExpiry(24); // 24 hours
-      
-      // Save verification token to user
-      await UserModel.setEmailVerificationToken(user.id!, verificationToken, tokenExpiry);
-      
-      // Send verification email
-      try {
-        await emailService.sendVerificationEmail(email, verificationToken, user.name);
-        res.json({
-          success: true,
-          message: 'Verification email sent successfully'
-        });
-      } catch (emailError) {
-        console.error('Failed to send verification email:', emailError);
-        res.status(500).json({
-          success: false,
-          message: 'Failed to send verification email'
-        });
-      }
-    } catch (error) {
-      console.error('Resend verification error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error'
-      });
+/**
+ * Verify Email
+ * POST /api/auth/verify-email
+ */
+router.post('/verify-email', [
+  body('token').notEmpty().withMessage('Verification token is required')
+], async (req: Request, res: Response): Promise<void> => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({ error: 'Validation failed', details: errors.array() });
+      return;
     }
+
+    const { token } = req.body;
+    const supabase = getSupabaseClient();
+    
+    // Verify email with Supabase Auth
+    const { data, error } = await supabase.auth.verifyOtp({
+      token_hash: token,
+      type: 'email'
+    });
+
+    if (error) {
+      console.error('Email verification error:', error);
+      res.status(400).json({ error: error.message || 'Invalid or expired verification token' });
+      return;
+    }
+
+    if (!data.user) {
+      res.status(400).json({ error: 'Email verification failed' });
+      return;
+    }
+
+    // Get user profile
+    const { data: userProfile, error: profileError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    // Track email verification event
+    try {
+      await AnalyticsModel.trackEvent({
+        user_id: data.user.id,
+        feature_name: 'auth',
+        action: 'email_verified',
+        metadata: JSON.stringify({ email: data.user.email })
+      });
+    } catch (analyticsError) {
+      console.error('Analytics tracking error:', analyticsError);
+    }
+
+    res.json({ 
+      message: 'Email verified successfully',
+      user: userProfile || {
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.user_metadata?.name || 'User',
+        role: data.user.user_metadata?.role || 'user',
+        email_verified: true
+      }
+    });
+  } catch (error: any) {
+    console.error('Email verification error:', error);
+    res.status(500).json({ error: 'Email verification failed' });
   }
-);
+});
+
+/**
+ * Resend Verification Email
+ * POST /api/auth/resend-verification
+ */
+router.post('/resend-verification', createRateLimiter(5, 15), [
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required')
+], async (req: Request, res: Response): Promise<void> => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({ error: 'Validation failed', details: errors.array() });
+      return;
+    }
+
+    const { email } = req.body;
+    const supabase = getSupabaseClient();
+    
+    // Resend verification email with Supabase Auth
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: `${process.env.FRONTEND_URL}/auth/verify`
+      }
+    });
+
+    if (error) {
+      console.error('Resend verification error:', error);
+      // Don't reveal specific errors for security
+      res.json({ message: 'If an account with this email exists, a verification email has been sent.' });
+      return;
+    }
+
+    res.json({ message: 'Verification email sent successfully' });
+  } catch (error: any) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({ error: 'Failed to resend verification email' });
+  }
+});
 
 export default router;

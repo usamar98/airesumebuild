@@ -44,15 +44,22 @@ const app: express.Application = express()
 // Security middleware
 app.use(helmet())
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:5173',
+    'https://web-production-3f4a.up.railway.app',
+    'http://localhost:5173',
+    'http://localhost:3000'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }))
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
-// Rate limiting
-app.use('/api/auth', createRateLimiter(5, 15)) // 5 requests per 15 minutes for auth
-app.use('/api', createRateLimiter(100, 15)) // 100 requests per 15 minutes for general API
+// Rate limiting - temporarily disabled for debugging
+// app.use('/api/auth', createRateLimiter(5, 15)) // 5 requests per 15 minutes for auth
+// app.use('/api', createRateLimiter(100, 15)) // 100 requests per 15 minutes for general API
 
 // Configure multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() })
@@ -110,17 +117,21 @@ app.post('/api/generate-work-suggestions', generateWorkSuggestions)
 app.post('/api/generate-cover-letter', authenticateSupabaseToken, generateCoverLetter)
 
 /**
+ * test endpoint
+ */
+app.get('/api/test', (req: Request, res: Response) => {
+  res.json({ success: true, message: 'test endpoint working' })
+})
+
+/**
  * health
  */
-app.use(
-  '/api/health',
-  (req: Request, res: Response, next: NextFunction): void => {
-    res.status(200).json({
-      success: true,
-      message: 'ok',
-    })
-  },
-)
+app.get('/api/health', (req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    message: 'ok',
+  })
+})
 
 /**
  * error handler middleware
