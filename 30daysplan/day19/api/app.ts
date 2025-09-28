@@ -22,7 +22,6 @@ import express, {
 } from 'express'
 import cors from 'cors'
 import multer from 'multer'
-import path from 'path'
 import { improveText } from './routes/improve-text.js'
 import { analyzeResume } from './routes/analyze-resume.js'
 import generatePDF from './routes/generate-pdf.js'
