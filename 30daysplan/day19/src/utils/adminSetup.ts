@@ -43,7 +43,7 @@ export const createDefaultAdminUser = async (): Promise<void> => {
       return;
     }
     
-    const adminUser = users.users.find(user => user.email === DEFAULT_ADMIN_CREDENTIALS.email);
+    const adminUser = users.users.find((user: any) => user.email === DEFAULT_ADMIN_CREDENTIALS.email);
     
     if (!adminUser) {
       console.log('👤 Creating admin user with confirmed email...');

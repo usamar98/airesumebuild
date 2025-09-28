@@ -123,15 +123,6 @@ export default function ResumeBuilder() {
       description: 'Recognized for outstanding performance',
       category: 'professional'
     }],
-    languages: [{
-      id: '1',
-      name: 'English',
-      proficiency: 'native'
-    }, {
-      id: '2',
-      name: 'Spanish',
-      proficiency: 'intermediate'
-    }],
     languageSkills: [{
       id: '1',
       name: 'English',
@@ -341,11 +332,9 @@ export default function ResumeBuilder() {
         updated.selectedColorScheme = prev.selectedColorScheme;
       }
       
-      // Sync languages and languageSkills for backward compatibility
-      if (section === 'languages') {
+      // Handle languageSkills updates
+      if (section === 'languageSkills') {
         updated.languageSkills = data;
-      } else if (section === 'languageSkills') {
-        updated.languages = data;
       }
       
       // Save to localStorage

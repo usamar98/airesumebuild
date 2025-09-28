@@ -360,10 +360,10 @@ export default function PDFPreview({ data, sectionOrder, template }: PDFPreviewP
                   <div key={cert.id || index} className="flex justify-between items-start">
                     <div>
                       <h3 className="font-medium text-gray-900">{cert.name}</h3>
-                      <p className="text-gray-700">{cert.issuer}</p>
+                      <p className="text-gray-700">{cert.issuingOrganization}</p>
                     </div>
                     <div className="text-sm text-gray-600">
-                      {cert.date}
+                      {cert.issueDate}
                     </div>
                   </div>
                 ))}
@@ -383,8 +383,8 @@ export default function PDFPreview({ data, sectionOrder, template }: PDFPreviewP
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <h3 className="font-medium text-gray-900">{project.name}</h3>
-                        {project.url && (
-                          <p className="text-sm text-blue-600">{project.url}</p>
+                        {project.liveUrl && (
+                          <p className="text-sm text-blue-600">{project.liveUrl}</p>
                         )}
                       </div>
                       <div className="text-sm text-gray-600">
@@ -442,8 +442,8 @@ export default function PDFPreview({ data, sectionOrder, template }: PDFPreviewP
                 {data.awards.map((award, index) => (
                   <div key={award.id || index} className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-medium text-gray-900">{award.title}</h3>
-                      <p className="text-gray-700">{award.issuer}</p>
+                      <h3 className="font-medium text-gray-900">{award.name}</h3>
+                      <p className="text-gray-700">{award.organization}</p>
                       <p className="text-sm text-gray-600">{award.description}</p>
                     </div>
                     <div className="text-sm text-gray-600">
@@ -464,7 +464,7 @@ export default function PDFPreview({ data, sectionOrder, template }: PDFPreviewP
               <div className="space-y-2">
                 {data.languageSkills.map((lang, index) => (
                   <div key={index} className="flex justify-between items-center">
-                    <span className="font-medium text-gray-900">{lang.language}</span>
+                    <span className="font-medium text-gray-900">{lang.name}</span>
                     <span className="text-sm text-gray-600">{lang.proficiency}</span>
                   </div>
                 ))}
@@ -747,6 +747,14 @@ export default function PDFPreview({ data, sectionOrder, template }: PDFPreviewP
       </div>
     </div>
   );
+}
+
+// Type declarations for window object
+declare global {
+  interface Window {
+    generatePDF?: () => void;
+    generateAlternativePDF?: (data: ResumeData) => Promise<Blob>;
+  }
 }
 
 // Expose functions to window object for debugging

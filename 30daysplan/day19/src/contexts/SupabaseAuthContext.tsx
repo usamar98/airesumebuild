@@ -123,7 +123,10 @@ export const SupabaseAuthProvider: React.FC<AuthProviderProps> = ({ children }) 
                 email: session.user.email || '',
                 name: profileData.user?.name || session.user.user_metadata?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '',
                 role: profileData.user?.role || session.user.user_metadata?.role || 'user',
-                email_verified: !!session.user.email_confirmed_at
+                email_verified: !!session.user.email_confirmed_at,
+                created_at: session.user.created_at || new Date().toISOString(),
+                updated_at: session.user.updated_at || new Date().toISOString(),
+                last_login: new Date().toISOString()
               });
             } else {
               // Fallback to convertSupabaseUser if backend call fails
@@ -199,7 +202,10 @@ export const SupabaseAuthProvider: React.FC<AuthProviderProps> = ({ children }) 
               email: data.user.email || '',
               name: profileData.user?.name || data.user.user_metadata?.name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || '',
               role: profileData.user?.role || data.user.user_metadata?.role || 'user',
-              email_verified: !!data.user.email_confirmed_at
+              email_verified: !!data.user.email_confirmed_at,
+              created_at: data.user.created_at || new Date().toISOString(),
+              updated_at: data.user.updated_at || new Date().toISOString(),
+              last_login: new Date().toISOString()
             });
           } else {
             // Fallback to user metadata if backend call fails
@@ -208,7 +214,10 @@ export const SupabaseAuthProvider: React.FC<AuthProviderProps> = ({ children }) 
               email: data.user.email || '',
               name: data.user.user_metadata?.name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || '',
               role: data.user.user_metadata?.role || 'user',
-              email_verified: !!data.user.email_confirmed_at
+              email_verified: !!data.user.email_confirmed_at,
+              created_at: data.user.created_at || new Date().toISOString(),
+              updated_at: data.user.updated_at || new Date().toISOString(),
+              last_login: new Date().toISOString()
             });
           }
         } catch (error) {
@@ -219,7 +228,10 @@ export const SupabaseAuthProvider: React.FC<AuthProviderProps> = ({ children }) 
             email: data.user.email || '',
             name: data.user.user_metadata?.name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || '',
             role: data.user.user_metadata?.role || 'user',
-            email_verified: !!data.user.email_confirmed_at
+            email_verified: !!data.user.email_confirmed_at,
+            created_at: data.user.created_at || new Date().toISOString(),
+            updated_at: data.user.updated_at || new Date().toISOString(),
+            last_login: new Date().toISOString()
           });
         }
         

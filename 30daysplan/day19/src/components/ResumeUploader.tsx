@@ -225,13 +225,6 @@ export default function ResumeUploader({ onDataParsed, className = '' }: ResumeU
         description: award.description || '',
         category: award.category || 'other'
       })),
-      languages: parsedData.languages.map((lang, index) => ({
-        id: lang.id || `lang-${index}`,
-        name: lang.name || '',
-        proficiency: lang.proficiency || 'beginner',
-        certifications: lang.certifications || [],
-        certification: lang.certification || ''
-      })),
       languageSkills: parsedData.languages.map((lang, index) => ({
         id: lang.id || `lang-${index}`,
         name: lang.name || '',

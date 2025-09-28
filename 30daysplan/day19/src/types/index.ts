@@ -21,6 +21,7 @@ export interface PersonalInfo {
   address: string;
   dateOfBirth: string;
   nationality: string;
+  location?: string;
   languages: string[];
   professionalSummary: string;
 }
@@ -43,7 +44,7 @@ export interface Education {
   id: string;
   degree: string;
   institution: string;
-  location: string;
+  location?: string;
   startDate: string;
   endDate: string;
   gpa?: string;
@@ -180,8 +181,7 @@ export interface ResumeData {
   projects: Project[];
   volunteerExperience: VolunteerExperience[];
   awards: Award[];
-  languages: Language[];
-  languageSkills: Language[]; // Alias for backward compatibility
+  languageSkills: Language[];
   references: Reference[];
   publications: Publication[];
   patents: Patent[];

@@ -1677,7 +1677,7 @@ export default function LivePreview({ data, template, onSectionOrderChange, onSe
     volunteerExperience: data.volunteerExperience?.length || 0,
     awards: data.awards?.length || 0,
     languageSkills: data.languageSkills?.length || 0,
-    languages: data.languages?.length || 0,
+    languages: data.languageSkills?.length || 0,
     references: data.references?.length || 0,
     publications: data.publications?.length || 0,
     patents: data.patents?.length || 0,

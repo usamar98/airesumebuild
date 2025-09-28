@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { ResumeData } from '../types/resume';
+import { ResumeData } from '../types';
 
 // Alternative PDF generator using jsPDF
 export class JSPDFGenerator {
@@ -87,8 +87,8 @@ export class JSPDFGenerator {
         data.workExperience.forEach(exp => {
           experienceContent.push(`${exp.jobTitle} at ${exp.company}`);
           experienceContent.push(`${exp.startDate} - ${exp.endDate || ''}`);
-          if (exp.description) {
-            experienceContent.push(exp.description);
+          if (exp.achievements && exp.achievements.length > 0) {
+            experienceContent.push(exp.achievements.join(', '));
           }
           experienceContent.push(''); // Empty line
         });

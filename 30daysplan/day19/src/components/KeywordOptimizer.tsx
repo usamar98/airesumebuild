@@ -81,7 +81,7 @@ const KeywordOptimizer: React.FC<KeywordOptimizerProps> = ({
     });
     
     // Languages
-    data.languages?.forEach(lang => {
+    data.languageSkills?.forEach(lang => {
       if (lang.name) sections.push(lang.name);
     });
     

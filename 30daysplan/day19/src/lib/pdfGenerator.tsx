@@ -5,7 +5,7 @@ import { ResumeData } from '../types';
 // TODO: Re-enable with proper error handling once DataView issue is resolved
 console.log('Font registration disabled - using system fonts only');
 
-interface TemplateMetadata {
+export interface TemplateMetadata {
   id: string;
   name: string;
   description: string;
@@ -295,7 +295,7 @@ const ResumeDocument = ({ data, template, sectionOrder: customSectionOrder }: { 
               {safeDate(vol.startDate)} - {safeDate(vol.endDate)}
             </Text>
             {vol.hoursPerWeek && String(vol.hoursPerWeek).trim().length > 0 && (
-              <Text style={styles.contactInfo}>Hours per week: {safeText(vol.hoursPerWeek)}</Text>
+              <Text style={styles.contactInfo}>Hours per week: {safeText(vol.hoursPerWeek?.toString() || '')}</Text>
             )}
           </View>
         ))}
@@ -421,14 +421,14 @@ const ResumeDocument = ({ data, template, sectionOrder: customSectionOrder }: { 
     
     // Handle both string and array types
     if (typeof data.hobbies === 'string') {
-      hobbiesText = data.hobbies.trim();
+      hobbiesText = (data.hobbies as string).trim();
       console.log('🔍 HobbiesSection: Processing string hobbies:', hobbiesText);
     } else if (Array.isArray(data.hobbies)) {
-      hobbiesText = data.hobbies.filter(hobby => hobby && hobby.trim()).join(' • ');
+      hobbiesText = (data.hobbies as string[]).filter(hobby => hobby && hobby.trim()).join(' • ');
       console.log('🔍 HobbiesSection: Processing array hobbies:', hobbiesText);
     } else {
       console.log('🔍 HobbiesSection: Unexpected hobbies type, converting to string');
-      hobbiesText = String(data.hobbies).trim();
+      hobbiesText = String(data.hobbies || '').trim();
     }
     
     if (!hobbiesText || hobbiesText.length === 0) {
@@ -950,9 +950,14 @@ const createMinimalFallbackData = (originalData: ResumeData): ResumeData => {
         id: exp.id || '1',
         jobTitle: exp.jobTitle || 'Position',
         company: exp.company || 'Company',
+        location: exp.location || '',
         startDate: exp.startDate || ' ',
         endDate: exp.endDate || ' ',
         achievements: exp.achievements?.slice(0, 2) || [],
+        companySize: exp.companySize || '',
+        industry: exp.industry || '',
+        technologies: exp.technologies || [],
+        teamSize: exp.teamSize || '',
       })) || [],
       skills: originalData.skills?.slice(0, 5) || ['Skill 1', 'Skill 2'],
       education: originalData.education?.slice(0, 1).map(edu => ({
@@ -1076,6 +1081,7 @@ const validateAndSanitizeData = (data: any): ResumeData => {
       professionalSummary: sanitizeStringForPDF(data.personalInfo.professionalSummary, 1000),
       dateOfBirth: sanitizeStringForPDF(data.personalInfo.dateOfBirth, 50),
       nationality: sanitizeStringForPDF(data.personalInfo.nationality, 50),
+      location: sanitizeStringForPDF(data.personalInfo.location || '', 100),
       languages: sanitizeArray(data.personalInfo.languages, 'personalInfo.languages'),
     };
     console.log('✅ personalInfo section processed successfully');
@@ -1159,6 +1165,7 @@ const validateAndSanitizeData = (data: any): ResumeData => {
     id: sanitizeStringForPDF(edu.id || Math.random().toString(), 50),
     degree: sanitizeStringForPDF(edu.degree, 100),
     institution: sanitizeStringForPDF(edu.institution, 100),
+    location: sanitizeStringForPDF(edu.location || '', 100),
     startDate: sanitizeStringForPDF(edu.startDate, 50),
     endDate: sanitizeStringForPDF(edu.endDate, 50),
     gpa: sanitizeStringForPDF(edu.gpa, 20),
