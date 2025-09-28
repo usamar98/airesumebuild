@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Login Test</title>
+</head>
+<body>
+    <h1>Testing Login...</h1>
+    <div id="status">Initializing test...</div>
+    
+    <script>
+        // Wait for page to load, then redirect to login and test
+        setTimeout(() => {
+            document.getElementById('status').textContent = 'Redirecting to login page...';
+            window.location.href = 'http://localhost:5173/login';
+        }, 1000);
+        
+        // If we're already on the login page, run the test
+        if (window.location.href.includes('/login')) {
+            setTimeout(() => {
+                console.log('🧪 Starting automated login test...');
+                
+                // Find email and password inputs
+                const emailInput = document.querySelector('input[type="email"], input[name="email"], input[placeholder*="email" i]');
+                const passwordInput = document.querySelector('input[type="password"], input[name="password"]');
+                const submitButton = document.querySelector('button[type="submit"], button:contains("Sign In"), button:contains("Login")');
+                
+                if (emailInput && passwordInput) {
+                    console.log('✅ Found login form elements');
+                    
+                    // Fill in the form
+                    emailInput.value = 'testuser@gmail.com';
+                    passwordInput.value = 'TestPassword123!';
+                    
+                    // Dispatch input events
+                    emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    emailInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    passwordInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    
+                    console.log('📝 Form filled with test credentials');
+                    
+                    // Submit the form
+                    setTimeout(() => {
+                        if (submitButton) {
+                            console.log('🚀 Submitting login form...');
+                            submitButton.click();
+                        } else {
+                            // Try form submission
+                            const form = emailInput.closest('form');
+                            if (form) {
+                                console.log('🚀 Submitting form via form element...');
+                                form.submit();
+                            } else {
+                                console.error('❌ No submit button or form found');
+                            }
+                        }
+                        
+                        // Monitor for changes
+                        let checkCount = 0;
+                        const checkInterval = setInterval(() => {
+                            checkCount++;
+                            const currentUrl = window.location.href;
+                            console.log(`🔍 Check ${checkCount}: Current URL: ${currentUrl}`);
+                            
+                            // Check for success (redirect away from login)
+                            if (!currentUrl.includes('/login')) {
+                                console.log('✅ Login successful! Redirected to:', currentUrl);
+                                clearInterval(checkInterval);
+                                return;
+                            }
+                            
+                            // Check for error messages
+                            const errorElements = document.querySelectorAll('[class*="error"], [class*="alert"], .text-red-500, .text-red-600');
+                            if (errorElements.length > 0) {
+                                console.log('❌ Error messages found:');
+                                errorElements.forEach(el => console.log('  -', el.textContent));
+                            }
+                            
+                            // Stop after 10 checks (30 seconds)
+                            if (checkCount >= 10) {
+                                console.log('⏰ Test timeout - login may have failed or is taking too long');
+                                clearInterval(checkInterval);
+                            }
+                        }, 3000);
+                        
+                    }, 1000);
+                } else {
+                    console.error('❌ Could not find email or password input fields');
+                    console.log('Available inputs:', document.querySelectorAll('input'));
+                }
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

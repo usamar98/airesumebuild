@@ -1,0 +1,30 @@
+{
+  "id": "professional_var_5",
+  "name": "Vibrant Professional",
+  "description": "Colorful layout with a touch of energy, perfect for start-ups and tech companies",
+  "font_family": "Poppins",
+  "font_size": 12,
+  "primary_color": "#0a1931",
+  "secondary_color": "#185adb",
+  "accent_color": "#ffc93c",
+  "section_order": [
+    "Skills",
+    "Projects",
+    "Work",
+    "Education"
+  ],
+  "bullet_style": "check",
+  "spacing": "normal",
+  "header_style": "centered",
+  "margins": {
+    "top": 30,
+    "bottom": 30,
+    "left": 30,
+    "right": 30
+  },
+  "line_height": 1.4,
+  "section_spacing": 18,
+  "category": "vibrant",
+  "base_template": "professional",
+  "variation_number": 5
+}

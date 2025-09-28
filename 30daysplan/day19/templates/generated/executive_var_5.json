@@ -1,0 +1,30 @@
+{
+  "id": "executive_var_5",
+  "name": "Executive Variation 5",
+  "description": "Bold and dynamic design for driven executives. Distinctive styling sets the tone for leadership.",
+  "font_family": "Poppins",
+  "font_size": 12,
+  "primary_color": "#0E121B",
+  "secondary_color": "#423E37",
+  "accent_color": "#F64D3C",
+  "section_order": [
+    "Skills",
+    "Projects",
+    "Work",
+    "Education"
+  ],
+  "bullet_style": "square",
+  "spacing": "compact",
+  "header_style": "executive",
+  "margins": {
+    "top": 40,
+    "bottom": 40,
+    "left": 60,
+    "right": 60
+  },
+  "line_height": 1.5,
+  "section_spacing": 20,
+  "category": "leadership",
+  "base_template": "executive",
+  "variation_number": 5
+}
