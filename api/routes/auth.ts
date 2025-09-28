@@ -425,38 +425,88 @@ router.post('/register', createRateLimiter(5, 15), registerValidation, async (re
  * POST /api/auth/login
  */
 router.post('/login', createRateLimiter(10, 15), loginValidation, async (req: Request, res: Response): Promise<void> => {
+  const requestId = Math.random().toString(36).substring(7);
+  console.log(`[${requestId}] Login attempt started for:`, req.body?.email);
+  
   try {
+    // Enhanced environment check for Railway debugging
+    console.log(`[${requestId}] Environment check:`, {
+      hasSupabaseUrl: !!process.env.SUPABASE_URL,
+      supabaseUrlValid: process.env.SUPABASE_URL?.includes('supabase.co'),
+      hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      serviceKeyValid: process.env.SUPABASE_SERVICE_ROLE_KEY?.startsWith('eyJ'),
+      nodeEnv: process.env.NODE_ENV,
+      isRailway: !!process.env.RAILWAY_ENVIRONMENT,
+      railwayEnv: process.env.RAILWAY_ENVIRONMENT
+    });
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log(`[${requestId}] Validation failed:`, errors.array());
       res.status(400).json({ error: 'Validation failed', details: errors.array() });
       return;
     }
 
     const { email, password } = req.body as LoginCredentials;
-    const supabase = getSupabaseClient();
+    console.log(`[${requestId}] Creating Supabase client for login...`);
+    
+    let supabase;
+    try {
+      supabase = getSupabaseClient();
+      console.log(`[${requestId}] Supabase client created successfully for login`);
+    } catch (clientError: any) {
+      console.error(`[${requestId}] Failed to create Supabase client for login:`, {
+        message: clientError.message,
+        stack: clientError.stack
+      });
+      res.status(500).json({ error: 'Database connection failed during login' });
+      return;
+    }
     
     // Authenticate with Supabase Auth
+    console.log(`[${requestId}] Attempting authentication with Supabase...`);
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password
     });
 
     if (authError) {
-      console.error('Supabase auth error:', authError);
+      console.error(`[${requestId}] Supabase auth error:`, {
+        message: authError.message,
+        status: authError.status,
+        code: authError.code,
+        details: authError.details,
+        hint: authError.hint,
+        fullError: authError
+      });
+      
       if (authError.message.includes('Invalid login credentials')) {
+        console.log(`[${requestId}] Invalid credentials provided`);
         res.status(401).json({ error: 'Invalid email or password' });
         return;
       }
-      res.status(401).json({ error: authError.message || 'Login failed' });
+      
+      if (authError.message.includes('Invalid API key') || authError.message.includes('JWT')) {
+        console.error(`[${requestId}] Authentication configuration error during login`);
+        res.status(500).json({ error: 'Server authentication configuration error' });
+        return;
+      }
+      
+      console.error(`[${requestId}] Unhandled login auth error:`, authError.message);
+      res.status(401).json({ error: authError.message || 'Login failed - check server logs' });
       return;
     }
 
     if (!authData.user || !authData.session) {
+      console.error(`[${requestId}] No user data or session returned from Supabase`);
       res.status(401).json({ error: 'Authentication failed' });
       return;
     }
 
+    console.log(`[${requestId}] Authentication successful, user ID:`, authData.user.id);
+
     // Get user profile from public.users table
+    console.log(`[${requestId}] Fetching user profile from database...`);
     const { data: userProfile, error: profileError } = await supabase
       .from('users')
       .select('*')
@@ -521,7 +571,12 @@ router.post('/login', createRateLimiter(10, 15), loginValidation, async (req: Re
       }
     });
   } catch (error: any) {
-    console.error('Login error:', error);
+    console.error(`[${requestId}] Unexpected login error:`, {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      cause: error.cause
+    });
     res.status(500).json({ error: 'Internal server error during login' });
   }
 });
