@@ -61,26 +61,49 @@ const router = Router();
 router.get('/debug', async (req: Request, res: Response): Promise<void> => {
   const debugInfo: any = {
     timestamp: new Date().toISOString(),
-    environment: {
-      NODE_ENV: process.env.NODE_ENV,
-      PORT: process.env.PORT,
-      hasJwtSecret: !!process.env.JWT_SECRET,
-      jwtSecretLength: process.env.JWT_SECRET?.length || 0,
-      hasFrontendUrl: !!process.env.FRONTEND_URL,
-      frontendUrl: process.env.FRONTEND_URL,
-      hasSupabaseUrl: !!process.env.SUPABASE_URL,
-      supabaseUrl: process.env.SUPABASE_URL,
-      hasSupabaseServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-      supabaseServiceKeyLength: process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0,
-      hasEmailHost: !!process.env.EMAIL_HOST,
-      emailHost: process.env.EMAIL_HOST,
-      hasEmailUser: !!process.env.EMAIL_USER,
-      emailUser: process.env.EMAIL_USER
+    railway: {
+      environment: process.env.RAILWAY_ENVIRONMENT || 'not-detected',
+      projectId: process.env.RAILWAY_PROJECT_ID || 'not-detected',
+      serviceId: process.env.RAILWAY_SERVICE_ID || 'not-detected',
+      deploymentId: process.env.RAILWAY_DEPLOYMENT_ID || 'not-detected',
+      replicaId: process.env.RAILWAY_REPLICA_ID || 'not-detected'
     },
-    supabaseConnection: null,
-    databaseTables: null,
-    errors: []
+    environment: {
+      nodeEnv: process.env.NODE_ENV,
+      port: process.env.PORT,
+      jwtSecret: process.env.JWT_SECRET ? 'SET' : 'NOT_SET',
+      jwtSecretValid: process.env.JWT_SECRET && process.env.JWT_SECRET !== 'your-secret-key' && process.env.JWT_SECRET.length > 10,
+      frontendUrl: process.env.FRONTEND_URL,
+      frontendUrlValid: process.env.FRONTEND_URL && !process.env.FRONTEND_URL.includes('localhost'),
+      supabaseUrl: process.env.SUPABASE_URL ? 'SET' : 'NOT_SET',
+      supabaseUrlValid: process.env.SUPABASE_URL && process.env.SUPABASE_URL.includes('supabase.co'),
+      supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'NOT_SET',
+      supabaseServiceKeyValid: process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY.startsWith('eyJ'),
+      supabaseAnonKey: process.env.VITE_SUPABASE_ANON_KEY ? 'SET' : 'NOT_SET',
+      emailPass: process.env.EMAIL_PASS ? 'SET' : 'NOT_SET',
+      emailFrom: process.env.EMAIL_FROM ? 'SET' : 'NOT_SET'
+    },
+    supabaseConnection: 'NOT_TESTED',
+    databaseTables: 'NOT_TESTED',
+    authTest: 'NOT_TESTED',
+    registrationTest: 'NOT_TESTED',
+    errors: [],
+    warnings: []
   };
+
+  // Check for configuration warnings
+  if (!debugInfo.environment.jwtSecretValid) {
+    debugInfo.warnings.push('JWT_SECRET appears to be using default/placeholder value');
+  }
+  if (!debugInfo.environment.frontendUrlValid) {
+    debugInfo.warnings.push('FRONTEND_URL appears to be using localhost instead of production URL');
+  }
+  if (!debugInfo.environment.supabaseUrlValid) {
+    debugInfo.warnings.push('SUPABASE_URL does not appear to be a valid Supabase URL');
+  }
+  if (!debugInfo.environment.supabaseServiceKeyValid) {
+    debugInfo.warnings.push('SUPABASE_SERVICE_ROLE_KEY does not appear to be a valid JWT token');
+  }
 
   try {
     // Test Supabase client creation
@@ -102,8 +125,8 @@ router.get('/debug', async (req: Request, res: Response): Promise<void> => {
       debugInfo.databaseTables = 'SUCCESS';
     }
     
-    // Test user table structure
-    console.log('Debug: Testing user table structure...');
+    // Test user table structure and RLS
+    console.log('Debug: Testing user table structure and RLS...');
     const { data: tableInfo, error: tableError } = await supabase
       .from('users')
       .select('*')
@@ -111,6 +134,9 @@ router.get('/debug', async (req: Request, res: Response): Promise<void> => {
     
     if (tableError) {
       debugInfo.errors.push(`User table error: ${tableError.message}`);
+      if (tableError.message.includes('permission denied')) {
+        debugInfo.errors.push('RLS policy may be blocking access - check table permissions');
+      }
     }
     
     // Test auth admin capabilities
@@ -123,11 +149,45 @@ router.get('/debug', async (req: Request, res: Response): Promise<void> => {
       
       if (authError) {
         debugInfo.errors.push(`Auth admin error: ${authError.message}`);
+        debugInfo.authTest = 'ERROR';
       } else {
-        debugInfo.authAdmin = 'SUCCESS';
+        debugInfo.authTest = 'SUCCESS';
+        console.log(`Debug: Found ${authTest.users?.length || 0} existing users`);
       }
     } catch (authTestError: any) {
       debugInfo.errors.push(`Auth admin test failed: ${authTestError.message}`);
+      debugInfo.authTest = 'ERROR';
+    }
+    
+    // Test user creation capability (dry run)
+    console.log('Debug: Testing user creation capability...');
+    try {
+      // Test with a fake email to see if we get validation errors vs permission errors
+      const testEmail = `test-${Date.now()}@example.com`;
+      const { data: createTest, error: createError } = await supabase.auth.admin.createUser({
+        email: testEmail,
+        password: 'test123456',
+        user_metadata: { name: 'Test User', role: 'user' },
+        email_confirm: false
+      });
+      
+      if (createError) {
+        if (createError.message.includes('already registered')) {
+          debugInfo.registrationTest = 'SUCCESS (user exists)';
+        } else {
+          debugInfo.errors.push(`Registration test error: ${createError.message}`);
+          debugInfo.registrationTest = 'ERROR';
+        }
+      } else {
+        debugInfo.registrationTest = 'SUCCESS';
+        // Clean up test user
+        if (createTest.user?.id) {
+          await supabase.auth.admin.deleteUser(createTest.user.id);
+        }
+      }
+    } catch (regTestError: any) {
+      debugInfo.errors.push(`Registration test failed: ${regTestError.message}`);
+      debugInfo.registrationTest = 'ERROR';
     }
     
   } catch (error: any) {
