@@ -22,6 +22,7 @@ import express, {
 } from 'express'
 import cors from 'cors'
 import multer from 'multer'
+import path from 'path'
 import { improveText } from './routes/improve-text.js'
 import { analyzeResume } from './routes/analyze-resume.js'
 import generatePDF from './routes/generate-pdf.js'
@@ -56,6 +57,38 @@ app.use('/api', createRateLimiter(100, 15)) // 100 requests per 15 minutes for g
 
 // Configure multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() })
+
+/**
+ * Static file serving for production
+ */
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files from the dist directory
+  app.use(express.static(path.join(__dirname, '..', 'dist')))
+  
+  // Handle React Router - send all non-API requests to index.html
+  app.get('*', (req: Request, res: Response) => {
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'))
+    }
+  })
+}
+
+/**
+ * Root route for API info
+ */
+app.get('/', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    message: 'Resume AI API Server',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      protected: '/api/protected',
+      admin: '/api/admin'
+    }
+  })
+})
 
 /**
  * API Routes
