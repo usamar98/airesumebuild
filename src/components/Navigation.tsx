@@ -1,13 +1,28 @@
 /**
  * Navigation Component
  * Provides consistent navigation across all pages with authentication support
+ * Updated with role-based 3-section structure: Jobs Hub, My Dashboard, AI Assistant
  */
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSupabaseAuth } from '../contexts/SupabaseAuthContext';
-import { DocumentTextIcon, UserIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { useRoleManagement } from '../hooks/useRoleManagement';
+import { 
+  DocumentTextIcon, 
+  UserIcon, 
+  ArrowRightOnRectangleIcon,
+  BriefcaseIcon,
+  ChartBarIcon,
+  SparklesIcon,
+  ChevronDownIcon,
+  Bars3Icon,
+  XMarkIcon
+} from '@heroicons/react/24/outline';
+import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from './LanguageSelector';
+import { isFeatureEnabled } from '../config/featureFlags';
+import ComingSoon from './ComingSoon';
 
 // Safe hook to handle context outside provider
 const useSafeSupabaseAuth = () => {
@@ -37,8 +52,26 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
   const { t } = useTranslation();
   const { user, logout } = useSafeSupabaseAuth();
+  const { userRole, permissions, canAccessFeature } = useRoleManagement();
   const location = useLocation();
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) {
+        setActiveDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -56,8 +89,147 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
     return location.pathname === path;
   };
 
+  const isActiveGroup = (paths: string[]) => {
+    return paths.some(path => location.pathname.startsWith(path));
+  };
+
+  // Define navigation sections based on optimized architecture
+  const getNavigationSections = () => {
+    const sections = [];
+
+    // Jobs Hub - Always visible but content varies by role
+    const jobsHubItems = [
+      { 
+        label: 'Browse Jobs', 
+        path: '/jobs-hub?view=browse', 
+        visible: canAccessFeature('canBrowseJobs'),
+        disabled: !isFeatureEnabled('browseJobs'),
+        comingSoon: !isFeatureEnabled('browseJobs')
+      },
+      { 
+        label: 'Saved Jobs', 
+        path: '/jobs-hub?view=saved', 
+        visible: canAccessFeature('canSaveJobs'),
+        disabled: !isFeatureEnabled('savedJobs'),
+        comingSoon: !isFeatureEnabled('savedJobs')
+      },
+      { 
+        label: 'Post Job', 
+        path: '/jobs-hub?view=post', 
+        visible: canAccessFeature('canPostJobs'),
+        isSpecial: true, // Mark as special for styling
+        disabled: !isFeatureEnabled('employerDashboard'),
+        comingSoon: !isFeatureEnabled('employerDashboard')
+      },
+      { 
+        label: 'Manage Jobs', 
+        path: '/jobs-hub?view=manage', 
+        visible: canAccessFeature('canPostJobs'),
+        disabled: !isFeatureEnabled('employerDashboard'),
+        comingSoon: !isFeatureEnabled('employerDashboard')
+      }
+    ].filter(item => item.visible);
+
+    sections.push({
+      id: 'jobs-hub',
+      label: 'Jobs Hub',
+      icon: BriefcaseIcon,
+      path: '/jobs-hub',
+      isActive: isActiveGroup(['/jobs-hub', '/jobs', '/post-job', '/saved-jobs']),
+      subItems: jobsHubItems
+    });
+
+    // My Dashboard - Role-based content
+    if (user) {
+      sections.push({
+        id: 'dashboard',
+        label: 'My Dashboard',
+        icon: ChartBarIcon,
+        path: '/dashboard',
+        isActive: isActiveGroup(['/dashboard', '/employer-dashboard', '/applicant-dashboard', '/profile']),
+        subItems: [
+          { 
+            label: 'Overview', 
+            path: '/dashboard', 
+            visible: true,
+            disabled: !isFeatureEnabled('jobSeekerOverview'),
+            comingSoon: !isFeatureEnabled('jobSeekerOverview')
+          },
+          { 
+            label: 'Applications', 
+            path: '/dashboard/applications', 
+            visible: userRole === 'job_seeker' || userRole === 'dual',
+            disabled: !isFeatureEnabled('jobSeekerApplications'),
+            comingSoon: !isFeatureEnabled('jobSeekerApplications')
+          },
+          { 
+            label: 'Posted Jobs', 
+            path: '/dashboard/jobs', 
+            visible: userRole === 'employer' || userRole === 'dual',
+            disabled: !isFeatureEnabled('employerDashboard'),
+            comingSoon: !isFeatureEnabled('employerDashboard')
+          },
+          { 
+            label: 'Analytics', 
+            path: '/dashboard/analytics', 
+            visible: canAccessFeature('canViewAnalytics'),
+            disabled: !isFeatureEnabled('employerDashboard'),
+            comingSoon: !isFeatureEnabled('employerDashboard')
+          },
+          { 
+            label: 'Profile', 
+            path: '/dashboard/profile', 
+            visible: true,
+            disabled: !isFeatureEnabled('jobSeekerProfile'),
+            comingSoon: !isFeatureEnabled('jobSeekerProfile')
+          }
+        ].filter(item => item.visible)
+      });
+    }
+
+    // AI Assistant - Role-specific tools
+    const getAIAssistantItems = () => {
+      if (userRole === 'job_seeker') {
+        return [
+          { label: 'Resume Builder', path: '/builder', visible: true },
+          { label: 'Resume Analyzer', path: '/analyzer', visible: true },
+          { label: 'Upwork Proposal', path: '/upwork-proposal', visible: true },
+          { label: 'AI Chat', path: '/ai-assistant', visible: canAccessFeature('canAccessAITools') },
+          { label: 'Templates', path: '/templates', visible: true }
+        ];
+      } else if (userRole === 'employer') {
+        return [
+          { label: 'AI Chat', path: '/ai-assistant', visible: canAccessFeature('canAccessAITools') },
+          { label: 'Templates', path: '/templates', visible: true }
+        ];
+      } else {
+        // For dual role or undefined, show all tools
+        return [
+          { label: 'Resume Builder', path: '/builder', visible: true },
+          { label: 'Resume Analyzer', path: '/analyzer', visible: true },
+          { label: 'Upwork Proposal', path: '/upwork-proposal', visible: true },
+          { label: 'AI Chat', path: '/ai-assistant', visible: canAccessFeature('canAccessAITools') },
+          { label: 'Templates', path: '/templates', visible: true }
+        ];
+      }
+    };
+
+    sections.push({
+      id: 'ai-assistant',
+      label: 'AI Assistant',
+      icon: SparklesIcon,
+      path: '/ai-assistant',
+      isActive: isActiveGroup(['/ai-assistant', '/builder', '/analyzer', '/upwork-proposal']),
+      subItems: getAIAssistantItems().filter(item => item.visible)
+    });
+
+    return sections;
+  };
+
+  const navigationSections = getNavigationSections();
+
   return (
-    <nav className={`bg-white shadow-sm ${className}`}>
+    <nav ref={navRef} className={`bg-white shadow-sm ${className}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -68,59 +240,61 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation - 3 Main Sections */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-4">
-              <Link 
-                to="/builder" 
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/builder') 
-                    ? 'text-blue-600 bg-blue-50' 
-                    : 'text-gray-600 hover:text-blue-600'
-                }`}
-              >
-                {t('navigation.resumeBuilder')}
-              </Link>
-              <Link 
-                to="/update-resume" 
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/update-resume') 
-                    ? 'text-blue-600 bg-blue-50' 
-                    : 'text-gray-600 hover:text-blue-600'
-                }`}
-              >
-                {t('navigation.uploadResume')}
-              </Link>
-              <Link 
-                to="/analyzer" 
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/analyzer') 
-                    ? 'text-blue-600 bg-blue-50' 
-                    : 'text-gray-600 hover:text-blue-600'
-                }`}
-              >
-                {t('navigation.resumeAnalyzer')}
-              </Link>
-              <Link 
-                to="/templates" 
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/templates') 
-                    ? 'text-blue-600 bg-blue-50' 
-                    : 'text-gray-600 hover:text-blue-600'
-                }`}
-              >
-                {t('navigation.templates')}
-              </Link>
-              <Link 
-                to="/cover-letter" 
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/cover-letter') 
-                    ? 'text-blue-600 bg-blue-50' 
-                    : 'text-gray-600 hover:text-blue-600'
-                }`}
-              >
-                {t('navigation.coverLetter')}
-              </Link>
+              {navigationSections.map((section) => (
+                <div key={section.id} className="relative">
+                  <button
+                    onClick={() => setActiveDropdown(activeDropdown === section.id ? null : section.id)}
+                    className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      section.isActive
+                        ? 'text-blue-600 bg-blue-50'
+                        : 'text-gray-600 hover:text-blue-600'
+                    }`}
+                  >
+                    <section.icon className="h-4 w-4 mr-1" />
+                    {section.label}
+                    <ChevronDownIcon className="h-3 w-3 ml-1" />
+                  </button>
+                  
+                  {/* Dropdown Menu */}
+                  {activeDropdown === section.id && (
+                    <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                      <div className="py-1">
+                        {section.subItems.map((item) => (
+                          <div key={item.path} className="relative">
+                            <Link
+                              to={item.disabled ? '#' : item.path}
+                              onClick={(e) => {
+                                if (item.disabled) {
+                                  e.preventDefault();
+                                  return;
+                                }
+                                setActiveDropdown(null);
+                              }}
+                              className={`block px-4 py-2 text-sm transition-colors ${
+                                item.isSpecial 
+                                  ? 'text-white bg-blue-600 hover:bg-blue-700 font-medium' 
+                                  : 'text-gray-700 hover:bg-gray-100'
+                              } ${item.disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+                            >
+                              {item.isSpecial && <Plus className="h-4 w-4 inline mr-2" />}
+                              {item.label}
+                              {item.comingSoon && (
+                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                  Soon
+                                </span>
+                              )}
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+
               
               {/* Language Selector */}
               <LanguageSelector />
@@ -171,109 +345,103 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
           {/* Mobile menu button */}
           <div className="md:hidden">
             <button
-              type="button"
-              className="bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
-              aria-expanded="false"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
             >
-              <span className="sr-only">Open main menu</span>
-              {/* Hamburger icon */}
-              <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              {isMobileMenuOpen ? (
+                <XMarkIcon className="h-6 w-6" />
+              ) : (
+                <Bars3Icon className="h-6 w-6" />
+              )}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile menu - You can expand this later with state management */}
-      <div className="md:hidden">
-        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-50">
-          <Link 
-            to="/builder" 
-            className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-              isActive('/builder') 
-                ? 'text-blue-600 bg-blue-50' 
-                : 'text-gray-600 hover:text-blue-600'
-            }`}
-          >
-            {t('navigation.resumeBuilder')}
-          </Link>
-          <Link 
-            to="/update-resume" 
-            className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-              isActive('/update-resume') 
-                ? 'text-blue-600 bg-blue-50' 
-                : 'text-gray-600 hover:text-blue-600'
-            }`}
-          >
-            {t('navigation.uploadResume')}
-          </Link>
-          <Link 
-            to="/analyzer" 
-            className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-              isActive('/analyzer') 
-                ? 'text-blue-600 bg-blue-50' 
-                : 'text-gray-600 hover:text-blue-600'
-            }`}
-          >
-            {t('navigation.resumeAnalyzer')}
-          </Link>
-          <Link 
-            to="/templates" 
-            className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-              isActive('/templates') 
-                ? 'text-blue-600 bg-blue-50' 
-                : 'text-gray-600 hover:text-blue-600'
-            }`}
-          >
-            {t('navigation.templates')}
-          </Link>
-          <Link 
-            to="/cover-letter" 
-            className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-              isActive('/cover-letter') 
-                ? 'text-blue-600 bg-blue-50' 
-                : 'text-gray-600 hover:text-blue-600'
-            }`}
-          >
-            {t('navigation.coverLetter')}
-          </Link>
-          
-          {user ? (
-            <div className="border-t border-gray-200 pt-4 mt-4">
-
-              <div className="px-3 py-2 text-sm text-gray-700">
-                Welcome, {user.name}
+      {/* Mobile menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden">
+          <div className="px-2 pt-2 pb-3 space-y-1">
+            {navigationSections.map((section) => (
+              <div key={section.id} className="space-y-1">
+                <div className="px-3 py-2 text-sm font-semibold text-gray-900 bg-gray-50 rounded-md">
+                  <section.icon className="h-4 w-4 inline mr-2" />
+                  {section.label}
+                </div>
+                {section.subItems.map((item) => (
+                  <div key={item.path} className="relative">
+                    <Link
+                      to={item.disabled ? '#' : item.path}
+                      onClick={(e) => {
+                        if (item.disabled) {
+                          e.preventDefault();
+                          return;
+                        }
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`${
+                        item.isSpecial
+                          ? 'bg-blue-600 text-white hover:bg-blue-700 font-medium'
+                          : isActive(item.path)
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'text-gray-600 hover:bg-gray-50'
+                      } ${item.disabled ? 'opacity-60 cursor-not-allowed' : ''} block px-6 py-2 rounded-md text-base font-medium ml-4 flex items-center justify-between`}
+                    >
+                      <div className="flex items-center">
+                        {item.isSpecial && <Plus className="h-4 w-4 mr-2" />}
+                        {item.label}
+                      </div>
+                      {item.comingSoon && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          Soon
+                        </span>
+                      )}
+                    </Link>
+                  </div>
+                ))}
               </div>
-              <button
-                onClick={handleLogout}
-                className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-red-600 transition-colors"
-              >
-                Logout
-              </button>
+            ))}
+            
+            {/* Authentication section for mobile */}
+            <div className="border-t border-gray-200 pt-4 mt-4">
+              {user ? (
+                <>
+                  <div className="px-3 py-2 text-sm text-gray-700">
+                    Welcome, {user.name}
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-red-600 transition-colors"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <Link 
+                    to="/login" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                      isActive('/login') 
+                        ? 'text-blue-600 bg-blue-50' 
+                        : 'text-gray-600 hover:text-blue-600'
+                    }`}
+                  >
+                    Login
+                  </Link>
+                  <Link 
+                    to="/register" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-md text-base font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                  >
+                    Sign Up
+                  </Link>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="border-t border-gray-200 pt-4 mt-4 space-y-2">
-              <Link 
-                to="/login" 
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                  isActive('/login') 
-                    ? 'text-blue-600 bg-blue-50' 
-                    : 'text-gray-600 hover:text-blue-600'
-                }`}
-              >
-                Login
-              </Link>
-              <Link 
-                to="/register" 
-                className="block px-3 py-2 rounded-md text-base font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-              >
-                Sign Up
-              </Link>
-            </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </nav>
   );
 };

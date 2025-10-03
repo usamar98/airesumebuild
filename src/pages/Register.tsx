@@ -5,14 +5,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSupabaseAuth } from '../contexts/SupabaseAuthContext';
-import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle, Briefcase, Building2, Users } from 'lucide-react';
+import { isFeatureEnabled } from '../config/featureFlags';
+import ComingSoon from '../components/ComingSoon';
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    userRole: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -45,7 +48,7 @@ const Register: React.FC = () => {
     setPasswordStrength(strength);
   }, [formData.password]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -56,7 +59,7 @@ const Register: React.FC = () => {
   };
 
   const validateForm = () => {
-    const { name, email, password, confirmPassword } = formData;
+    const { name, email, password, confirmPassword, userRole } = formData;
 
     if (!name.trim()) {
       return 'Name is required';
@@ -72,6 +75,10 @@ const Register: React.FC = () => {
 
     if (!email.includes('@') || !email.includes('.')) {
       return 'Please enter a valid email address';
+    }
+
+    if (!userRole) {
+      return 'Please select your role';
     }
 
     if (!password) {
@@ -107,7 +114,7 @@ const Register: React.FC = () => {
     setSuccess('');
 
     try {
-      const result = await register(formData.name, formData.email, formData.password);
+      const result = await register(formData.name, formData.email, formData.password, formData.userRole);
       
       if (result.success) {
         setSuccess(result.message || 'Registration successful! Please check your email to verify your account.');
@@ -117,7 +124,8 @@ const Register: React.FC = () => {
           name: '',
           email: '',
           password: '',
-          confirmPassword: ''
+          confirmPassword: '',
+          userRole: ''
         });
         
         // Redirect to login after a short delay
@@ -222,6 +230,138 @@ const Register: React.FC = () => {
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Enter your email"
                   />
+                </div>
+              </div>
+
+              {/* Role Selection Field */}
+              <div>
+                <label htmlFor="userRole" className="block text-sm font-medium text-gray-700 mb-2">
+                  I am a *
+                </label>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-3">
+                    {/* Job Seeker Option */}
+                    <label className={`relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      formData.userRole === 'job_seeker' 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="userRole"
+                        value="job_seeker"
+                        checked={formData.userRole === 'job_seeker'}
+                        onChange={handleInputChange}
+                        className="sr-only"
+                      />
+                      <div className="flex items-center space-x-3">
+                        <div className={`p-2 rounded-lg ${
+                          formData.userRole === 'job_seeker' ? 'bg-blue-100' : 'bg-gray-100'
+                        }`}>
+                          <Briefcase className={`h-5 w-5 ${
+                            formData.userRole === 'job_seeker' ? 'text-blue-600' : 'text-gray-600'
+                          }`} />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">Job Seeker</div>
+                          <div className="text-sm text-gray-600">Looking for job opportunities</div>
+                        </div>
+                      </div>
+                      {formData.userRole === 'job_seeker' && (
+                        <div className="absolute top-2 right-2">
+                          <CheckCircle className="h-5 w-5 text-blue-600" />
+                        </div>
+                      )}
+                    </label>
+
+                    {/* Employer Option */}
+                    <label className={`relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      formData.userRole === 'employer' 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    } ${!isFeatureEnabled('employerRegistration') ? 'opacity-60' : ''}`}>
+                      <input
+                        type="radio"
+                        name="userRole"
+                        value="employer"
+                        checked={formData.userRole === 'employer'}
+                        onChange={handleInputChange}
+                        className="sr-only"
+                        disabled={!isFeatureEnabled('employerRegistration')}
+                      />
+                      <div className="flex items-center space-x-3">
+                        <div className={`p-2 rounded-lg ${
+                          formData.userRole === 'employer' ? 'bg-blue-100' : 'bg-gray-100'
+                        }`}>
+                          <Building2 className={`h-5 w-5 ${
+                            formData.userRole === 'employer' ? 'text-blue-600' : 'text-gray-600'
+                          }`} />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">Employer</div>
+                          <div className="text-sm text-gray-600">Hiring talent for my company</div>
+                        </div>
+                      </div>
+                      {formData.userRole === 'employer' && (
+                        <div className="absolute top-2 right-2">
+                          <CheckCircle className="h-5 w-5 text-blue-600" />
+                        </div>
+                      )}
+                      {!isFeatureEnabled('employerRegistration') && (
+                        <ComingSoon
+                          variant="overlay"
+                          size="small"
+                          title="Employer Registration"
+                          description="Employer features are coming soon! Stay tuned for updates."
+                          className="rounded-lg"
+                        />
+                      )}
+                    </label>
+
+                    {/* Both Option */}
+                    <label className={`relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      formData.userRole === 'dual' 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    } ${!isFeatureEnabled('employerRegistration') ? 'opacity-60' : ''}`}>
+                      <input
+                        type="radio"
+                        name="userRole"
+                        value="dual"
+                        checked={formData.userRole === 'dual'}
+                        onChange={handleInputChange}
+                        className="sr-only"
+                        disabled={!isFeatureEnabled('employerRegistration')}
+                      />
+                      <div className="flex items-center space-x-3">
+                        <div className={`p-2 rounded-lg ${
+                          formData.userRole === 'dual' ? 'bg-blue-100' : 'bg-gray-100'
+                        }`}>
+                          <Users className={`h-5 w-5 ${
+                            formData.userRole === 'dual' ? 'text-blue-600' : 'text-gray-600'
+                          }`} />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">Both</div>
+                          <div className="text-sm text-gray-600">I'm both looking for jobs and hiring</div>
+                        </div>
+                      </div>
+                      {formData.userRole === 'dual' && (
+                        <div className="absolute top-2 right-2">
+                          <CheckCircle className="h-5 w-5 text-blue-600" />
+                        </div>
+                      )}
+                      {!isFeatureEnabled('employerRegistration') && (
+                        <ComingSoon
+                          variant="overlay"
+                          size="small"
+                          title="Dual Role Registration"
+                          description="Dual role features are coming soon! Stay tuned for updates."
+                          className="rounded-lg"
+                        />
+                      )}
+                    </label>
+                  </div>
                 </div>
               </div>
 

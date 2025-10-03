@@ -63,7 +63,7 @@ const extractTextFromPDF = async (file: File): Promise<string> => {
   // For client-side PDF parsing, we'll send the file to the backend
   // This is a placeholder that sends the file to the server for processing
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('resume', file);
   
   try {
     const response = await fetch('/api/parse-pdf', {
@@ -88,10 +88,10 @@ const extractTextFromDOCX = async (file: File): Promise<string> => {
   // For client-side DOCX parsing, we'll send the file to the backend
   // This is a placeholder that sends the file to the server for processing
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('resume', file);
   
   try {
-    const response = await fetch('/api/parse-docx', {
+    const response = await fetch('/api/parse-pdf', {
       method: 'POST',
       body: formData,
     });

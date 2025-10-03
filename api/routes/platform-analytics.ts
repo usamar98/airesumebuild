@@ -1,0 +1,299 @@
+/**
+ * Platform Analytics API routes
+ * Handle platform configuration, analytics data, and aggregated reports
+ */
+import { Router, type Request, type Response } from 'express';
+import { body, query, validationResult } from 'express-validator';
+import { authenticateSupabaseToken, SupabaseAuthenticatedRequest, createRateLimiter } from '../middleware/supabaseAuth.ts';
+import { platformServiceFactory, DataAggregator } from '../services/platforms/index.ts';
+
+const router = Router();
+
+// Rate limiters
+const configRateLimit = createRateLimiter(10, 15 * 60 * 1000); // 10 requests per 15 minutes
+const analyticsRateLimit = createRateLimiter(100, 60 * 1000); // 100 requests per minute
+const syncRateLimit = createRateLimiter(5, 60 * 1000); // 5 sync requests per minute
+
+/**
+ * Get platform configurations for authenticated user
+ * GET /api/platform-analytics/configs
+ */
+router.get('/configs', authenticateSupabaseToken, analyticsRateLimit, async (req: SupabaseAuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
+    }
+
+    const configs = await platformServiceFactory.getUserConfigs(userId);
+    res.json({ configs });
+  } catch (error: any) {
+    console.error('Error fetching platform configs:', error);
+    res.status(500).json({ error: 'Failed to fetch platform configurations' });
+  }
+});
+
+/**
+ * Create or update platform configuration
+ * POST /api/platform-analytics/configs
+ */
+router.post('/configs', 
+  authenticateSupabaseToken,
+  configRateLimit,
+  [
+    body('platform_type').isIn(['website', 'referral', 'indeed', 'linkedin', 'glassdoor']).withMessage('Invalid platform type'),
+    body('platform_name').isLength({ min: 1, max: 100 }).withMessage('Platform name must be 1-100 characters'),
+    body('config').isObject().withMessage('Config must be an object'),
+    body('is_active').optional().isBoolean().withMessage('is_active must be a boolean')
+  ],
+  async (req: SupabaseAuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        res.status(400).json({ error: 'Validation failed', details: errors.array() });
+        return;
+      }
+
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ error: 'User not authenticated' });
+        return;
+      }
+
+      const { platform_type, platform_name, config, is_active = true } = req.body;
+
+      // Get the appropriate service
+      const service = platformServiceFactory.getService(platform_type, platform_name);
+      if (!service) {
+        res.status(400).json({ error: 'Platform service not found' });
+        return;
+      }
+
+      // Validate configuration
+      const validation = await service.validateConfig(config);
+      if (!validation.isValid) {
+        res.status(400).json({ 
+          error: 'Invalid configuration', 
+          details: validation.errors 
+        });
+        return;
+      }
+
+      // Save configuration
+      const savedConfig = await service.savePlatformConfig(userId, platform_type, platform_name, config, is_active);
+      
+      res.json({ 
+        message: 'Platform configuration saved successfully',
+        config: savedConfig 
+      });
+    } catch (error: any) {
+      console.error('Error saving platform config:', error);
+      res.status(500).json({ error: 'Failed to save platform configuration' });
+    }
+  }
+);
+
+/**
+ * Get analytics data for a specific platform
+ * GET /api/platform-analytics/data/:platform_type/:platform_name
+ */
+router.get('/data/:platform_type/:platform_name',
+  authenticateSupabaseToken,
+  analyticsRateLimit,
+  [
+    query('start_date').optional().isISO8601().withMessage('start_date must be a valid ISO date'),
+    query('end_date').optional().isISO8601().withMessage('end_date must be a valid ISO date'),
+    query('aggregation').optional().isIn(['daily', 'weekly', 'monthly']).withMessage('aggregation must be daily, weekly, or monthly')
+  ],
+  async (req: SupabaseAuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        res.status(400).json({ error: 'Validation failed', details: errors.array() });
+        return;
+      }
+
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ error: 'User not authenticated' });
+        return;
+      }
+
+      const { platform_type, platform_name } = req.params;
+      const { start_date, end_date, aggregation = 'daily' } = req.query;
+
+      // Get the appropriate service
+      const service = platformServiceFactory.getService(platform_type, platform_name);
+      if (!service) {
+        res.status(404).json({ error: 'Platform service not found' });
+        return;
+      }
+
+      // Fetch analytics data
+      const analyticsData = await service.fetchAnalytics(userId, {
+        startDate: start_date ? new Date(start_date as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Default: 30 days ago
+        endDate: end_date ? new Date(end_date as string) : new Date(),
+        aggregation: aggregation as 'daily' | 'weekly' | 'monthly'
+      });
+
+      res.json({ 
+        platform_type,
+        platform_name,
+        data: analyticsData 
+      });
+    } catch (error: any) {
+      console.error('Error fetching analytics data:', error);
+      res.status(500).json({ error: 'Failed to fetch analytics data' });
+    }
+  }
+);
+
+/**
+ * Get aggregated analytics dashboard data
+ * GET /api/platform-analytics/dashboard
+ */
+router.get('/dashboard',
+  authenticateSupabaseToken,
+  analyticsRateLimit,
+  [
+    query('period').optional().isIn(['7d', '30d', '90d', '1y']).withMessage('period must be 7d, 30d, 90d, or 1y'),
+    query('aggregation').optional().isIn(['daily', 'weekly', 'monthly']).withMessage('aggregation must be daily, weekly, or monthly')
+  ],
+  async (req: SupabaseAuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        res.status(400).json({ error: 'Validation failed', details: errors.array() });
+        return;
+      }
+
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ error: 'User not authenticated' });
+        return;
+      }
+
+      const { period = '30d', aggregation = 'daily' } = req.query;
+
+      // Calculate date range
+      const periodDays = {
+        '7d': 7,
+        '30d': 30,
+        '90d': 90,
+        '1y': 365
+      };
+
+      const endDate = new Date();
+      const startDate = new Date(Date.now() - periodDays[period as keyof typeof periodDays] * 24 * 60 * 60 * 1000);
+
+      const dataAggregator = new DataAggregator();
+
+      // Get aggregated data
+      const aggregatedDataResponse = await dataAggregator.getAggregatedAnalytics(
+        userId,
+        aggregation as 'daily' | 'weekly' | 'monthly',
+        {
+          start: startDate.toISOString(),
+          end: endDate.toISOString()
+        }
+      );
+
+      const aggregatedData = aggregatedDataResponse.success ? aggregatedDataResponse.data : [];
+
+      // Get platform breakdown
+      const platformBreakdown = await dataAggregator.getPlatformBreakdown(userId, startDate, endDate);
+
+      // Get sync job statuses
+      const syncStatuses = await platformServiceFactory.getAllSyncStatuses(userId);
+
+      res.json({
+        period,
+        aggregation,
+        date_range: {
+          start: startDate.toISOString(),
+          end: endDate.toISOString()
+        },
+        aggregated_data: aggregatedData,
+        platform_breakdown: platformBreakdown,
+        sync_statuses: syncStatuses
+      });
+    } catch (error: any) {
+      console.error('Error fetching dashboard data:', error);
+      res.status(500).json({ error: 'Failed to fetch dashboard data' });
+    }
+  }
+);
+
+/**
+ * Trigger manual sync for a platform
+ * POST /api/platform-analytics/sync/:platform_type/:platform_name
+ */
+router.post('/sync/:platform_type/:platform_name',
+  authenticateSupabaseToken,
+  syncRateLimit,
+  async (req: SupabaseAuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ error: 'User not authenticated' });
+        return;
+      }
+
+      const { platform_type, platform_name } = req.params;
+
+      // Get the appropriate service
+      const service = platformServiceFactory.getService(platform_type, platform_name);
+      if (!service) {
+        res.status(404).json({ error: 'Platform service not found' });
+        return;
+      }
+
+      // Trigger sync
+      const syncResult = await platformServiceFactory.syncPlatformAnalytics(platform_type, platform_name, userId);
+
+      res.json({
+        message: 'Sync initiated successfully',
+        sync_job_id: syncResult.jobId,
+        status: syncResult.status
+      });
+    } catch (error: any) {
+      console.error('Error triggering sync:', error);
+      res.status(500).json({ error: 'Failed to trigger sync' });
+    }
+  }
+);
+
+/**
+ * Get sync job status
+ * GET /api/platform-analytics/sync-status/:job_id
+ */
+router.get('/sync-status/:job_id',
+  authenticateSupabaseToken,
+  analyticsRateLimit,
+  async (req: SupabaseAuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ error: 'User not authenticated' });
+        return;
+      }
+
+      const { job_id } = req.params;
+
+      const jobStatus = await platformServiceFactory.getSyncJobStatus(job_id, userId);
+      
+      if (!jobStatus) {
+        res.status(404).json({ error: 'Sync job not found' });
+        return;
+      }
+
+      res.json({ job_status: jobStatus });
+    } catch (error: any) {
+      console.error('Error fetching sync status:', error);
+      res.status(500).json({ error: 'Failed to fetch sync status' });
+    }
+  }
+);
+
+export default router;

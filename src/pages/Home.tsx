@@ -13,7 +13,8 @@ import {
   ArrowRightIcon,
   PresentationChartLineIcon,
   AcademicCapIcon,
-  StarIcon
+  StarIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 import Navigation from '../components/Navigation';
@@ -376,6 +377,37 @@ export default function Home() {
                 <li className="flex items-start">
                   <CheckCircleIcon className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
                   <span>Professional formatting</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* AI Job Scraper */}
+            <div className="bg-white p-8 rounded-lg shadow-sm">
+              <div className="flex items-center mb-6">
+                <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mr-4">
+                  <MagnifyingGlassIcon className="h-6 w-6 text-indigo-600" />
+                </div>
+                <h3 className="text-2xl font-semibold text-gray-900">{t('home.toolsSection.aiJobScraperTitle')}</h3>
+              </div>
+              <p className="text-gray-600 mb-6">
+                {t('home.toolsSection.aiJobScraperDesc')}
+              </p>
+              <ul className="space-y-3 text-gray-600">
+                <li className="flex items-start">
+                  <CheckCircleIcon className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                  <span>Real-time job scraping from Upwork and Freelancer</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircleIcon className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                  <span>AI-powered proposal generation</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircleIcon className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                  <span>Smart job filtering and search</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircleIcon className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                  <span>Save jobs and proposals for later</span>
                 </li>
               </ul>
             </div>

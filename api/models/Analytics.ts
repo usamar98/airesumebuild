@@ -1,16 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-const getSupabaseClient = () => {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
-  if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment variables');
-  }
-  
-  return createClient(supabaseUrl, supabaseServiceKey);
-};
+import { supabase } from '../database/supabase.js';
 
 export interface AnalyticsEvent {
   id?: number;
@@ -42,10 +30,9 @@ export class AnalyticsModel {
   static async trackEvent(event: AnalyticsEvent): Promise<void> {
     try {
       const { user_id, feature_name, action, metadata } = event;
-      const supabase = getSupabaseClient();
       
       const { error } = await supabase
-        .from('analytics')
+        .from('analytics_events')
         .insert({
           user_id: user_id || null,
           feature_name,
@@ -65,10 +52,9 @@ export class AnalyticsModel {
 
   static async getFeatureUsageStats(days = 30): Promise<FeatureUsageStats[]> {
     try {
-      const supabase = getSupabaseClient();
       
       const { data, error } = await supabase
-        .from('analytics')
+        .from('analytics_events')
         .select('feature_name, created_at, user_id')
         .gte('created_at', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString());
       
@@ -107,7 +93,6 @@ export class AnalyticsModel {
 
   static async getUserEngagementStats(limit = 50): Promise<UserEngagementStats[]> {
     try {
-      const supabase = getSupabaseClient();
       
       // Get users from auth.users table
       const { data: users, error: usersError } = await supabase.auth.admin.listUsers();
@@ -115,7 +100,7 @@ export class AnalyticsModel {
       
       // Get analytics data
       const { data: analytics, error: analyticsError } = await supabase
-        .from('analytics')
+        .from('analytics_events')
         .select('user_id, feature_name, created_at');
       if (analyticsError) throw analyticsError;
       
@@ -156,10 +141,9 @@ export class AnalyticsModel {
 
   static async getPopularTemplates(days = 30): Promise<Array<{template_name: string; usage_count: number}>> {
     try {
-      const supabase = getSupabaseClient();
       
       const { data, error } = await supabase
-        .from('analytics')
+        .from('analytics_events')
         .select('metadata')
         .eq('feature_name', 'template_usage')
         .gte('created_at', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString());
@@ -187,10 +171,9 @@ export class AnalyticsModel {
 
   static async getPopularIndustries(days = 30): Promise<Array<{industry: string; usage_count: number}>> {
     try {
-      const supabase = getSupabaseClient();
       
       const { data, error } = await supabase
-        .from('analytics')
+        .from('analytics_events')
         .select('metadata')
         .in('feature_name', ['template_usage', 'resume_generation'])
         .gte('created_at', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString());
@@ -221,7 +204,7 @@ export class AnalyticsModel {
       const supabase = getSupabaseClient();
       
       const { data, error } = await supabase
-        .from('analytics')
+        .from('analytics_events')
         .select('user_id, created_at')
         .gte('created_at', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString());
       
@@ -253,7 +236,7 @@ export class AnalyticsModel {
       
       // Get total unique users
       const { data: totalUsersData, error: totalError } = await supabase
-        .from('analytics')
+        .from('analytics_events')
         .select('user_id')
         .gte('created_at', startDate);
       
@@ -263,7 +246,7 @@ export class AnalyticsModel {
       
       // Get users using specific feature
       const { data: featureUsersData, error: featureError } = await supabase
-        .from('analytics')
+        .from('analytics_events')
         .select('user_id')
         .eq('feature_name', feature)
         .gte('created_at', startDate);
@@ -294,7 +277,7 @@ export class AnalyticsModel {
       const supabase = getSupabaseClient();
       
       const { data, error } = await supabase
-        .from('analytics')
+        .from('analytics_events')
         .select('id, user_id, feature_name, action, metadata, created_at')
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -327,7 +310,7 @@ export class AnalyticsModel {
       
       // Get user's analytics data
       const { data: analyticsData, error: analyticsError } = await supabase
-        .from('analytics')
+        .from('analytics_events')
         .select('id, user_id, feature_name, action, metadata, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });

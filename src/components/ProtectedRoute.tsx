@@ -20,7 +20,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { isAuthenticated, isAdmin, isEmailVerified, isLoading, user } = useSupabaseAuth();
   const location = useLocation();
 
-  console.log('🛡️ ProtectedRoute:', {
+  console.log('🛡️ ProtectedRoute DEBUG:', {
     isAuthenticated,
     isAdmin,
     isEmailVerified,
@@ -28,7 +28,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     requireAdmin,
     requireEmailVerification,
     pathname: location.pathname,
-    user: user ? { id: user.id, email: user.email } : null
+    user: user ? { id: user.id, email: user.email } : null,
+    timestamp: new Date().toISOString()
   });
 
   // Show loading spinner while checking authentication - but with timeout

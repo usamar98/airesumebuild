@@ -5,9 +5,9 @@
 import { Router, type Request, type Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { createClient } from '@supabase/supabase-js';
-import { AnalyticsModel } from '../models/Analytics.js';
-import { authenticateSupabaseToken, requireAdmin, createRateLimiter, SupabaseAuthenticatedRequest } from '../middleware/supabaseAuth.js';
-import { emailService } from '../services/emailService.js';
+import { AnalyticsModel } from '../models/Analytics.ts';
+import { authenticateSupabaseToken, requireAdmin, createRateLimiter, SupabaseAuthenticatedRequest } from '../middleware/supabaseAuth.ts';
+import { emailService } from '../services/emailService.ts';
 
 // Initialize Supabase client
 const getSupabaseClient = () => {
@@ -292,7 +292,7 @@ router.post('/register', createRateLimiter(5, 15), registerValidation, async (re
       password,
       user_metadata: {
         name,
-        role: 'user'
+        role: 'job_seeker'
       },
       email_confirm: false // Require email verification
     });
@@ -349,7 +349,7 @@ router.post('/register', createRateLimiter(5, 15), registerValidation, async (re
         id: authData.user.id,
         email: authData.user.email,
         name,
-        role: 'user'
+        role: 'job_seeker'
       });
 
     if (profileError) {
@@ -405,7 +405,7 @@ router.post('/register', createRateLimiter(5, 15), registerValidation, async (re
         id: authData.user.id,
         email: authData.user.email,
         name,
-        role: 'user',
+        role: 'job_seeker',
         email_verified: false
       }
     });
@@ -522,7 +522,7 @@ router.post('/login', createRateLimiter(10, 15), loginValidation, async (req: Re
           id: authData.user.id,
           email: authData.user.email!,
           name: authData.user.user_metadata?.name || 'User',
-          role: authData.user.user_metadata?.role || 'user'
+          role: authData.user.user_metadata?.role || 'job_seeker'
         });
       
       if (insertError) {
@@ -556,7 +556,7 @@ router.post('/login', createRateLimiter(10, 15), loginValidation, async (req: Re
       id: authData.user.id,
       email: authData.user.email,
       name: authData.user.user_metadata?.name || 'User',
-      role: authData.user.user_metadata?.role || 'user'
+      role: authData.user.user_metadata?.role || 'job_seeker'
     };
 
     res.json({
@@ -616,13 +616,18 @@ router.post('/logout', authenticateSupabaseToken, async (req: SupabaseAuthentica
  */
 router.get('/profile', authenticateSupabaseToken, async (req: SupabaseAuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    console.log('Profile route - Handler started');
     const userId = req.user?.id;
+    console.log('Profile route - User ID:', userId);
+    
     if (!userId) {
+      console.log('Profile route - No user ID found');
       res.status(401).json({ error: 'User not authenticated' });
       return;
     }
 
     const supabase = getSupabaseClient();
+    console.log('Profile route - Fetching user profile from database...');
     
     // Get user profile from public.users table
     const { data: userProfile, error: profileError } = await supabase
@@ -632,11 +637,13 @@ router.get('/profile', authenticateSupabaseToken, async (req: SupabaseAuthentica
       .single();
 
     if (profileError) {
-      console.error('Profile fetch error:', profileError);
+      console.error('Profile route - Profile fetch error:', profileError);
       res.status(404).json({ error: 'User profile not found' });
       return;
     }
 
+    console.log('Profile route - Profile found, sending response...');
+    console.log('Profile route - Profile data:', userProfile ? 'Present' : 'Missing');
     res.json({ user: userProfile });
   } catch (error: any) {
     console.error('Profile error:', error);

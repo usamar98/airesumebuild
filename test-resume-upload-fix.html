@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Resume Upload Fix</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .result { margin-top: 10px; padding: 10px; border-radius: 3px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Test Resume Upload Fix</h1>
+    <p>This page tests the fixed resume upload functionality with correct field names.</p>
+
+    <div class="test-section">
+        <h2>📄 Test Resume Upload (Parse PDF)</h2>
+        <p>Tests the /api/parse-pdf endpoint with correct 'resume' field name.</p>
+        <input type="file" id="uploadFile" accept=".pdf,.doc,.docx">
+        <button onclick="testResumeUpload()">Test Resume Upload</button>
+        <div id="upload-result" class="result"></div>
+    </div>
+
+    <script>
+        async function testResumeUpload() {
+            const fileInput = document.getElementById('uploadFile');
+            const resultDiv = document.getElementById('upload-result');
+            
+            if (!fileInput.files[0]) {
+                resultDiv.innerHTML = '<div class="error">Please select a file first</div>';
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            console.log('Testing file upload:', file.name, file.type, file.size);
+            
+            try {
+                const formData = new FormData();
+                formData.append('resume', file); // Using correct field name
+                
+                console.log('Sending request to /api/parse-pdf with resume field');
+                const response = await fetch('/api/parse-pdf', {
+                    method: 'POST',
+                    body: formData,
+                });
+                
+                console.log('Response status:', response.status);
+                const responseText = await response.text();
+                console.log('Raw response:', responseText);
+                
+                if (response.ok) {
+                    try {
+                        const data = JSON.parse(responseText);
+                        resultDiv.innerHTML = `
+                            <div class="success">
+                                <h3>✅ Upload Successful!</h3>
+                                <p><strong>Status:</strong> ${response.status}</p>
+                                <p><strong>Success:</strong> ${data.success}</p>
+                                <p><strong>Text Length:</strong> ${data.text ? data.text.length : 0} characters</p>
+                                <p><strong>Preview:</strong> ${data.text ? data.text.substring(0, 200) + '...' : 'No text extracted'}</p>
+                            </div>
+                        `;
+                    } catch (parseError) {
+                        resultDiv.innerHTML = `
+                            <div class="error">
+                                <h3>❌ JSON Parse Error</h3>
+                                <p><strong>Status:</strong> ${response.status}</p>
+                                <p><strong>Raw Response:</strong> ${responseText}</p>
+                                <p><strong>Parse Error:</strong> ${parseError.message}</p>
+                            </div>
+                        `;
+                    }
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h3>❌ Upload Failed</h3>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <p><strong>Response:</strong> ${responseText}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Request Failed</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

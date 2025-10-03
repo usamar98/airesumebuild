@@ -7,18 +7,20 @@ import { Session } from '@supabase/supabase-js';
 import { User } from '@/types';
 import { createErrorResponse, createSuccessResponse, logTechnicalError } from '../utils/errorMapper';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+// Removed old API imports - using only Supabase now
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; requiresVerification?: boolean }>;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string; message?: string }>;
+  register: (name: string, email: string, password: string, role: string) => Promise<{ success: boolean; error?: string; message?: string }>;
   logout: () => Promise<void>;
   getAccessToken: () => Promise<string | null>;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isEmailVerified: boolean;
+  supabase: typeof supabase;
 }
 
 // Convert Supabase User to our custom User type
@@ -37,6 +39,7 @@ const convertSupabaseUser = (supabaseUser: SupabaseUser): User => {
     email: supabaseUser.email || '',
     name: userName,
     role: (supabaseUser.user_metadata?.role as 'user' | 'admin') || 'user',
+    user_role: supabaseUser.user_metadata?.role as 'job_seeker' | 'employer' | 'dual',
     created_at: supabaseUser.created_at || new Date().toISOString(),
     updated_at: supabaseUser.updated_at || new Date().toISOString(),
     last_login: supabaseUser.last_sign_in_at || new Date().toISOString(),
@@ -107,47 +110,17 @@ export const SupabaseAuthProvider: React.FC<AuthProviderProps> = ({ children }) 
         if (!isMounted) return;
         
         if (event === 'SIGNED_IN' && session?.user) {
-          // Fetch user profile from backend to get the correct name
-          try {
-            const response = await fetch('/api/auth/profile', {
-              headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json'
-              }
-            });
-            
-            if (response.ok) {
-              const profileData = await response.json();
-              setUser({
-                id: session.user.id,
-                email: session.user.email || '',
-                name: profileData.user?.name || session.user.user_metadata?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '',
-                role: profileData.user?.role || session.user.user_metadata?.role || 'user',
-                email_verified: !!session.user.email_confirmed_at,
-                created_at: session.user.created_at || new Date().toISOString(),
-                updated_at: session.user.updated_at || new Date().toISOString(),
-                last_login: new Date().toISOString()
-              });
-            } else {
-              // Fallback to convertSupabaseUser if backend call fails
-              const convertedUser = convertSupabaseUser(session.user);
-              setUser(convertedUser);
-            }
-          } catch (error) {
-            console.error('Error fetching user profile in auth state change:', error);
-            // Fallback to convertSupabaseUser if backend call fails
-            const convertedUser = convertSupabaseUser(session.user);
-            setUser(convertedUser);
-          }
-          
+          // Use only Supabase user data - no old backend calls
+          const convertedUser = convertSupabaseUser(session.user);
+          setUser(convertedUser);
           setToken(session.access_token);
-          console.log('User signed in with profile data');
+          console.log('User signed in with Supabase data:', convertedUser);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setToken(null);
           console.log('User signed out');
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          // For token refresh, we can use the existing user data or fetch fresh profile
+          // For token refresh, use Supabase user data
           const convertedUser = convertSupabaseUser(session.user);
           setUser(convertedUser);
           setToken(session.access_token);
@@ -186,59 +159,13 @@ export const SupabaseAuthProvider: React.FC<AuthProviderProps> = ({ children }) 
       }
 
       if (data.session && data.user) {
-        // Fetch user profile from backend to get the correct name
-        try {
-          const response = await fetch('/api/auth/profile', {
-            headers: {
-              'Authorization': `Bearer ${data.session.access_token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (response.ok) {
-            const profileData = await response.json();
-            setUser({
-              id: data.user.id,
-              email: data.user.email || '',
-              name: profileData.user?.name || data.user.user_metadata?.name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || '',
-              role: profileData.user?.role || data.user.user_metadata?.role || 'user',
-              email_verified: !!data.user.email_confirmed_at,
-              created_at: data.user.created_at || new Date().toISOString(),
-              updated_at: data.user.updated_at || new Date().toISOString(),
-              last_login: new Date().toISOString()
-            });
-          } else {
-            // Fallback to user metadata if backend call fails
-            setUser({
-              id: data.user.id,
-              email: data.user.email || '',
-              name: data.user.user_metadata?.name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || '',
-              role: data.user.user_metadata?.role || 'user',
-              email_verified: !!data.user.email_confirmed_at,
-              created_at: data.user.created_at || new Date().toISOString(),
-              updated_at: data.user.updated_at || new Date().toISOString(),
-              last_login: new Date().toISOString()
-            });
-          }
-        } catch (error) {
-          console.error('Error fetching user profile:', error);
-          // Fallback to user metadata if backend call fails
-          setUser({
-            id: data.user.id,
-            email: data.user.email || '',
-            name: data.user.user_metadata?.name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || '',
-            role: data.user.user_metadata?.role || 'user',
-            email_verified: !!data.user.email_confirmed_at,
-            created_at: data.user.created_at || new Date().toISOString(),
-            updated_at: data.user.updated_at || new Date().toISOString(),
-            last_login: new Date().toISOString()
-          });
-        }
-        
+        // Use only Supabase user data - no old backend calls
+        const convertedUser = convertSupabaseUser(data.user);
+        setUser(convertedUser);
         setToken(data.session.access_token);
         setIsLoading(false);
         
-        console.log('Login successful:', data.user);
+        console.log('Login successful:', convertedUser);
         return { success: true };
       }
 
@@ -253,25 +180,19 @@ export const SupabaseAuthProvider: React.FC<AuthProviderProps> = ({ children }) 
     }
   };
 
-  const register = async (name: string, email: string, password: string): Promise<{ success: boolean; error?: string; message?: string }> => {
+  const register = async (name: string, email: string, password: string, role: string): Promise<{ success: boolean; error?: string; message?: string }> => {
     try {
       setIsLoading(true);
       
-      // Check if user already exists in Supabase
-      const { data: existingUsers, error: checkError } = await supabase
-        .from('auth.users')
-        .select('email')
-        .eq('email', email)
-        .limit(1);
-      
-      // Alternative approach: try to sign up and handle the specific error
+      // Register user with Supabase Auth - the trigger will handle public.users table
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             name: name,
-            full_name: name
+            full_name: name,
+            role: role
           }
         }
       });
@@ -398,6 +319,7 @@ export const SupabaseAuthProvider: React.FC<AuthProviderProps> = ({ children }) 
     isAuthenticated,
     isAdmin,
     isEmailVerified,
+    supabase,
   };
 
   return (

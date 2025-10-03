@@ -23,7 +23,13 @@ export default async function handler(req: Request, res: Response) {
   }
 
   try {
+    console.log('📥 Generate PDF Request Body:', JSON.stringify(req.body, null, 2));
+    console.log('📥 Request Body Keys:', Object.keys(req.body || {}));
+    
     const { resumeData, templateId }: { resumeData: ResumeData; templateId?: string } = req.body;
+    
+    console.log('📥 Extracted resumeData:', resumeData ? 'exists' : 'undefined');
+    console.log('📥 Extracted templateId:', templateId);
 
     // Validate required fields
     if (!resumeData.personalInfo?.fullName || !resumeData.personalInfo?.email) {

@@ -208,9 +208,25 @@ Write 3-4 paragraphs highlighting relevant experience and enthusiasm. Use actual
 
     console.log(`[${new Date().toISOString()}] Cover letter generation completed successfully`);
     
+    // Ensure we have valid content before sending response
+    if (!coverLetter || coverLetter.trim() === '') {
+      console.log(`[${new Date().toISOString()}] Empty cover letter detected, using fallback`);
+      coverLetter = generateFallbackCoverLetter(resumeData, companyName, positionTitle, jobDescription);
+    }
+    
+    // Final safety check
+    const finalCoverLetter = coverLetter.trim();
+    if (!finalCoverLetter) {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to generate cover letter content'
+      });
+      return;
+    }
+    
     res.status(200).json({
       success: true,
-      coverLetter: coverLetter.trim()
+      coverLetter: finalCoverLetter
     });
 
   } catch (error) {
@@ -219,15 +235,19 @@ Write 3-4 paragraphs highlighting relevant experience and enthusiasm. Use actual
     // Last resort: try fallback generation
     try {
       const { resumeData, companyName, positionTitle, jobDescription } = req.body;
-      console.log(`[${new Date().toISOString()}] Attempting fallback generation`);
-      const fallbackCoverLetter = generateFallbackCoverLetter(resumeData, companyName, positionTitle, jobDescription);
-      
-      res.status(200).json({
-        success: true,
-        coverLetter: fallbackCoverLetter,
-        warning: 'Generated using template due to AI service issues'
-      });
-      return;
+      if (resumeData && companyName && positionTitle && jobDescription) {
+        console.log(`[${new Date().toISOString()}] Attempting fallback generation`);
+        const fallbackCoverLetter = generateFallbackCoverLetter(resumeData, companyName, positionTitle, jobDescription);
+        
+        if (fallbackCoverLetter && fallbackCoverLetter.trim()) {
+          res.status(200).json({
+            success: true,
+            coverLetter: fallbackCoverLetter.trim(),
+            warning: 'Generated using template due to AI service issues'
+          });
+          return;
+        }
+      }
     } catch (fallbackError) {
       console.error(`[${new Date().toISOString()}] Fallback generation also failed:`, fallbackError);
     }
@@ -256,6 +276,7 @@ Write 3-4 paragraphs highlighting relevant experience and enthusiasm. Use actual
       }
     }
 
+    // Ensure we always return valid JSON
     res.status(statusCode).json({
       success: false,
       error: errorMessage

@@ -6,7 +6,9 @@
     "resumeAnalyzer": "Resume Analyzer",
     "templates": "Templates",
     "coverLetter": "Cover Letter",
-    "generateCoverLetter": "Generate Cover Letter"
+    "generateCoverLetter": "Generate Cover Letter",
+    "jobDashboard": "Job Dashboard",
+    "savedJobs": "Saved Jobs"
   },
   "home": {
     "title": "AI-Powered Resume Builder for 2025",
@@ -56,6 +58,8 @@
       "achievementQuantifierDesc": "Transform your achievements into measurable results that impact employers",
       "coverLetterGeneratorTitle": "Cover Letter Generator",
       "coverLetterGeneratorDesc": "Create personalized cover letters that perfectly complement your resume",
+      "aiJobScraperTitle": "AI Job Scraper & Proposal Generator",
+      "aiJobScraperDesc": "Find relevant jobs from Upwork and Freelancer, then generate AI-powered proposals instantly",
       "additionalToolsTitle": "Additional Professional Tools",
       "keywordOptimizerTitle": "Keyword Optimizer",
       "keywordOptimizerDesc": "Optimize your resume with the right keywords for job descriptions",

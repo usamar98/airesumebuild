@@ -125,6 +125,12 @@ export default async function handler(req: Request, res: Response) {
   }
 
   try {
+    console.log('📥 Parse PDF Request - File info:', req.file ? {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    } : 'No file');
+    
     // File upload is already handled by multer middleware in app.ts
     if (!req.file) {
       return res.status(400).json({ 

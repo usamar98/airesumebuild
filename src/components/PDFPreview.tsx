@@ -3,6 +3,8 @@ import { ResumeData } from '@/types';
 import { DocumentArrowDownIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { generatePDFBlob, TemplateMetadata } from '@/lib/pdfGenerator';
 import { generateAlternativePDF } from '@/lib/jsPdfGenerator';
+import { useSupabaseAuth } from '../contexts/SupabaseAuthContext';
+import AuthModal from './AuthModal';
 
 interface PDFPreviewProps {
   data: ResumeData;
@@ -14,6 +16,9 @@ export default function PDFPreview({ data, sectionOrder, template }: PDFPreviewP
   const [isGenerating, setIsGenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  
+  const { isAuthenticated } = useSupabaseAuth();
 
   // Expose functions to window for debugging
   useEffect(() => {
@@ -186,6 +191,24 @@ export default function PDFPreview({ data, sectionOrder, template }: PDFPreviewP
   };
 
   const downloadPDF = () => {
+    if (!pdfUrl) return;
+    
+    // Check if user is authenticated before allowing download
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+    
+    const link = document.createElement('a');
+    link.href = pdfUrl;
+    link.download = `${data.personalInfo.fullName.replace(/\s+/g, '_')}_Resume.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  const handleAuthSuccess = () => {
+    // After successful authentication, proceed with download
     if (pdfUrl) {
       const link = document.createElement('a');
       link.href = pdfUrl;
@@ -745,6 +768,15 @@ export default function PDFPreview({ data, sectionOrder, template }: PDFPreviewP
           </div>
         </div>
       </div>
+      
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+        title="Sign in to Download Resume"
+        message="Please sign in or create an account to download your resume. Your resume data will be saved and you can continue editing anytime."
+      />
     </div>
   );
 }

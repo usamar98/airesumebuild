@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test File Upload</title>
+</head>
+<body>
+    <h1>Test Resume Upload</h1>
+    
+    <h2>Test Parse PDF</h2>
+    <form id="parseForm">
+        <input type="file" id="parseFile" accept=".pdf,.doc,.docx">
+        <button type="submit">Upload to Parse PDF</button>
+    </form>
+    <div id="parseResult"></div>
+    
+    <h2>Test Analyze Resume</h2>
+    <form id="analyzeForm">
+        <input type="file" id="analyzeFile" accept=".pdf,.doc,.docx">
+        <button type="submit">Upload to Analyze Resume</button>
+    </form>
+    <div id="analyzeResult"></div>
+    
+    <script>
+        document.getElementById('parseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = document.getElementById('parseFile').files[0];
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('resume', file);
+            
+            try {
+                console.log('Sending request to parse-pdf...');
+                const response = await fetch('http://localhost:3001/api/parse-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                const text = await response.text();
+                console.log('Raw response text:', text);
+                
+                document.getElementById('parseResult').innerHTML = `
+                    <h3>Parse PDF Result:</h3>
+                    <p>Status: ${response.status}</p>
+                    <p>Raw Response: ${text}</p>
+                `;
+            } catch (error) {
+                console.error('Parse PDF error:', error);
+                document.getElementById('parseResult').innerHTML = `
+                    <h3>Parse PDF Error:</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        });
+        
+        document.getElementById('analyzeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = document.getElementById('analyzeFile').files[0];
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('resume', file);
+            
+            try {
+                console.log('Sending request to analyze-resume...');
+                const response = await fetch('http://localhost:3001/api/analyze-resume', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                const text = await response.text();
+                console.log('Raw response text:', text);
+                
+                document.getElementById('analyzeResult').innerHTML = `
+                    <h3>Analyze Resume Result:</h3>
+                    <p>Status: ${response.status}</p>
+                    <p>Raw Response: ${text}</p>
+                `;
+            } catch (error) {
+                console.error('Analyze Resume error:', error);
+                document.getElementById('analyzeResult').innerHTML = `
+                    <h3>Analyze Resume Error:</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

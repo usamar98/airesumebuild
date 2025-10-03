@@ -1,136 +1,261 @@
-import fs from 'fs';
-import path from 'path';
-import bcrypt from 'bcrypt';
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
 
-const dataDir = path.join(process.cwd(), 'data');
-const usersFile = path.join(dataDir, 'users.json');
-const analyticsFile = path.join(dataDir, 'analytics.json');
+// Load environment variables
+dotenv.config();
 
-// Ensure data directory exists
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+// Initialize Supabase client
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Missing Supabase configuration. Please check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.');
 }
 
-// Initialize data files
-if (!fs.existsSync(usersFile)) {
-  const defaultAdmin = {
-    id: 1,
-    email: 'admin@example.com',
-    password: bcrypt.hashSync('admin123', 10),
-    name: 'Admin User',
-    role: 'admin',
-    is_active: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    last_login: null
-  };
-  fs.writeFileSync(usersFile, JSON.stringify([defaultAdmin], null, 2));
-  console.log('Default admin user created: admin@example.com / admin123');
-}
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-if (!fs.existsSync(analyticsFile)) {
-  fs.writeFileSync(analyticsFile, JSON.stringify([], null, 2));
-}
-
-// Simple database interface
+// Database interface that mimics the original JSON-based database
 export const db = {
   prepare: (sql: string) => ({
-    run: (...params: any[]) => {
-      // This is a simplified implementation for basic CRUD operations
-      if (sql.includes('INSERT INTO users')) {
-        const users = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
-        const newId = Math.max(...users.map((u: any) => u.id), 0) + 1;
-        const newUser = {
-          id: newId,
-          email: params[0],
-          password: params[1],
-          name: params[2],
-          role: params[3] || 'user',
-          is_active: true,
-          email_verified: false,
-          email_verification_token: null,
-          email_verification_expires: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          last_login: null
-        };
-        users.push(newUser);
-        fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
-        return { lastInsertRowid: newId, changes: 1 };
-      }
-      if (sql.includes('INSERT INTO analytics')) {
-        const analytics = JSON.parse(fs.readFileSync(analyticsFile, 'utf8'));
-        const newId = Math.max(...analytics.map((a: any) => a.id), 0) + 1;
-        const newEvent = {
-          id: newId,
-          user_id: params[0],
-          feature_name: params[1],
-          action: params[2],
-          metadata: params[3],
-          created_at: new Date().toISOString()
-        };
-        analytics.push(newEvent);
-        fs.writeFileSync(analyticsFile, JSON.stringify(analytics, null, 2));
-        return { lastInsertRowid: newId, changes: 1 };
-      }
-      if (sql.includes('UPDATE users')) {
-        const users = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
-        const userId = params[params.length - 1];
-        const userIndex = users.findIndex((u: any) => u.id === userId);
-        if (userIndex !== -1) {
-          if (sql.includes('last_login')) {
-            users[userIndex].last_login = new Date().toISOString();
+    run: async (...params: any[]) => {
+      try {
+        // Handle INSERT INTO users
+        if (sql.includes('INSERT INTO users')) {
+          const [email, password, name, role = 'job_seeker'] = params;
+          
+          // First create auth user
+          const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true
+          });
+
+          if (authError) {
+            console.error('Error creating auth user:', authError);
+            throw authError;
           }
-          users[userIndex].updated_at = new Date().toISOString();
-          fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
-          return { changes: 1 };
+
+          // Then create public user record
+          const { data, error } = await supabase
+            .from('users')
+            .insert({
+              id: authData.user.id,
+              email,
+              full_name: name,
+              name: name,
+              role: role === 'user' ? 'job_seeker' : role,
+              password_hash: password, // Note: In real implementation, this should be hashed
+              is_active: true,
+              email_verified: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+          if (error) {
+            console.error('Error creating public user:', error);
+            throw error;
+          }
+
+          return { lastInsertRowid: data.id, changes: 1 };
         }
+
+        // Handle INSERT INTO analytics
+        if (sql.includes('INSERT INTO analytics')) {
+          const [user_id, feature_name, action, metadata] = params;
+          
+          const { data, error } = await supabase
+            .from('analytics_events')
+            .insert({
+              user_id,
+              event_type: feature_name,
+              feature_name,
+              action,
+              metadata: metadata ? JSON.parse(metadata) : null,
+              created_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+          if (error) {
+            console.error('Error creating analytics event:', error);
+            throw error;
+          }
+
+          return { lastInsertRowid: data.id, changes: 1 };
+        }
+
+        // Handle UPDATE users
+        if (sql.includes('UPDATE users')) {
+          const userId = params[params.length - 1];
+          const updateData: any = {
+            updated_at: new Date().toISOString()
+          };
+
+          if (sql.includes('last_login')) {
+            updateData.last_login = new Date().toISOString();
+          }
+
+          const { data, error } = await supabase
+            .from('users')
+            .update(updateData)
+            .eq('id', userId)
+            .select();
+
+          if (error) {
+            console.error('Error updating user:', error);
+            throw error;
+          }
+
+          return { changes: data.length };
+        }
+
+        // Handle DELETE FROM users
+        if (sql.includes('DELETE FROM users')) {
+          const userId = params[0];
+          
+          const { data, error } = await supabase
+            .from('users')
+            .delete()
+            .eq('id', userId)
+            .select();
+
+          if (error) {
+            console.error('Error deleting user:', error);
+            throw error;
+          }
+
+          return { changes: data.length };
+        }
+
         return { changes: 0 };
+      } catch (error) {
+        console.error('Database operation error:', error);
+        throw error;
       }
-      if (sql.includes('DELETE FROM users')) {
-        const users = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
-        const userId = params[0];
-        const initialLength = users.length;
-        const filteredUsers = users.filter((u: any) => u.id !== userId);
-        fs.writeFileSync(usersFile, JSON.stringify(filteredUsers, null, 2));
-        return { changes: initialLength - filteredUsers.length };
-      }
-      return { changes: 0 };
     },
-    get: (...params: any[]) => {
-      if (sql.includes('SELECT * FROM users WHERE email')) {
-        const users = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
-        return users.find((u: any) => u.email === params[0]) || null;
-      }
-      if (sql.includes('SELECT * FROM users WHERE id')) {
-        const users = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
-        return users.find((u: any) => u.id === params[0]) || null;
-      }
-      if (sql.includes('SELECT COUNT(*) as count FROM users')) {
-        const users = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
-        if (sql.includes('WHERE is_active = 1')) {
-          return { count: users.filter((u: any) => u.is_active).length };
+
+    get: async (...params: any[]) => {
+      try {
+        // Handle SELECT * FROM users WHERE email
+        if (sql.includes('SELECT * FROM users WHERE email')) {
+          const email = params[0];
+          
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+          if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+            console.error('Error fetching user by email:', error);
+            throw error;
+          }
+
+          return data || null;
         }
-        if (sql.includes('WHERE role = "admin"')) {
-          return { count: users.filter((u: any) => u.role === 'admin').length };
+
+        // Handle SELECT * FROM users WHERE id
+        if (sql.includes('SELECT * FROM users WHERE id')) {
+          const userId = params[0];
+          
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+          if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+            console.error('Error fetching user by id:', error);
+            throw error;
+          }
+
+          return data || null;
         }
-        return { count: users.length };
+
+        // Handle SELECT COUNT(*) as count FROM users
+        if (sql.includes('SELECT COUNT(*) as count FROM users')) {
+          let query = supabase
+            .from('users')
+            .select('*', { count: 'exact', head: true });
+
+          if (sql.includes('WHERE is_active = 1')) {
+            query = query.eq('is_active', true);
+          }
+          if (sql.includes('WHERE role = "admin"')) {
+            query = query.eq('role', 'admin');
+          }
+
+          const { count, error } = await query;
+
+          if (error) {
+            console.error('Error counting users:', error);
+            throw error;
+          }
+
+          return { count: count || 0 };
+        }
+
+        return null;
+      } catch (error) {
+        console.error('Database get operation error:', error);
+        throw error;
       }
-      return null;
     },
-    all: (...params: any[]) => {
-      if (sql.includes('SELECT') && sql.includes('FROM users')) {
-        const users = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
-        if (sql.includes('ORDER BY created_at DESC')) {
-          return users.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    all: async (...params: any[]) => {
+      try {
+        // Handle SELECT FROM users
+        if (sql.includes('SELECT') && sql.includes('FROM users')) {
+          let query = supabase
+            .from('users')
+            .select('*');
+
+          if (sql.includes('ORDER BY created_at DESC')) {
+            query = query.order('created_at', { ascending: false });
+          }
+
+          const { data, error } = await query;
+
+          if (error) {
+            console.error('Error fetching users:', error);
+            throw error;
+          }
+
+          return data || [];
         }
-        return users;
+
+        // Handle SELECT FROM analytics
+        if (sql.includes('SELECT') && sql.includes('FROM analytics')) {
+          const { data, error } = await supabase
+            .from('analytics_events')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (error) {
+            console.error('Error fetching analytics:', error);
+            throw error;
+          }
+
+          // Transform data to match original format
+          return data?.map(event => ({
+            id: event.id,
+            user_id: event.user_id,
+            feature_name: event.feature_name || event.event_type,
+            action: event.action,
+            metadata: event.metadata ? JSON.stringify(event.metadata) : null,
+            created_at: event.created_at
+          })) || [];
+        }
+
+        return [];
+      } catch (error) {
+        console.error('Database all operation error:', error);
+        throw error;
       }
-      if (sql.includes('SELECT') && sql.includes('FROM analytics')) {
-        const analytics = JSON.parse(fs.readFileSync(analyticsFile, 'utf8'));
-        return analytics;
-      }
-      return [];
     }
   })
 };
+
+export { supabase };

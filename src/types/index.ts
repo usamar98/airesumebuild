@@ -8,6 +8,18 @@ export interface User {
   updated_at: string;
   last_login: string;
   email_verified: boolean;
+  // Enhanced role management for job platform
+  user_role?: 'job_seeker' | 'employer' | 'dual';
+  role_preferences?: {
+    default_view?: 'job_seeker' | 'employer';
+    show_onboarding?: boolean;
+    preferred_dashboard?: string;
+  };
+  ui_preferences?: {
+    theme?: 'light' | 'dark';
+    language?: string;
+    notifications?: boolean;
+  };
 }
 
 export interface PersonalInfo {
@@ -190,6 +202,55 @@ export interface ResumeData {
   hobbies: string[];
   availableOnRequest: boolean;
   selectedColorScheme?: ColorScheme; // Color scheme from resume upload
+}
+
+// Role Management Types
+export type UserRole = 'job_seeker' | 'employer' | 'dual';
+
+export interface RolePermissions {
+  canBrowseJobs: boolean;
+  canPostJobs: boolean;
+  canSaveJobs: boolean;
+  canManageApplications: boolean;
+  canViewAnalytics: boolean;
+  canAccessAITools: boolean;
+}
+
+export interface NavigationItem {
+  id: string;
+  label: string;
+  path: string;
+  icon?: string;
+  roles: UserRole[];
+  subItems?: NavigationItem[];
+}
+
+export interface DashboardWidget {
+  id: string;
+  title: string;
+  component: string;
+  roles: UserRole[];
+  priority: number;
+  size: 'small' | 'medium' | 'large';
+}
+
+export interface FeatureUsage {
+  id: string;
+  user_id: string;
+  feature_name: string;
+  action: string;
+  context: Record<string, any>;
+  created_at: string;
+}
+
+export interface UserInteraction {
+  id: string;
+  user_id: string;
+  interaction_type: string;
+  target_id?: string;
+  target_type?: string;
+  metadata: Record<string, any>;
+  created_at: string;
 }
 
 export interface AnalysisResult {

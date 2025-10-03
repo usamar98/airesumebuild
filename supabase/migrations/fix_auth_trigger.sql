@@ -10,13 +10,14 @@ BEGIN
     NEW.id,
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'name', NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1)),
-    'user',
+    COALESCE(NEW.raw_user_meta_data->>'role', 'job_seeker'),
     NOW(),
     NOW()
   )
   ON CONFLICT (id) DO UPDATE SET
     email = EXCLUDED.email,
     name = COALESCE(EXCLUDED.name, public.users.name),
+    role = COALESCE(NEW.raw_user_meta_data->>'role', public.users.role),
     updated_at = NOW();
   
   RETURN NEW;

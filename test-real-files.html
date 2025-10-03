@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real File Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 API Endpoints Test - Real File Upload</h1>
+    <p>This page tests all three API endpoints with proper file handling.</p>
+
+    <!-- Test 1: PDF Generation -->
+    <div class="test-section">
+        <h2>📄 Test 1: PDF Generation</h2>
+        <p>Tests the /api/generate-pdf endpoint with JSON data.</p>
+        <button onclick="testPDFGeneration()">Test PDF Generation</button>
+        <div id="pdf-result" class="result"></div>
+    </div>
+
+    <!-- Test 2: Resume Analysis -->
+    <div class="test-section">
+        <h2>🔍 Test 2: Resume Analysis</h2>
+        <p>Tests the /api/analyze-resume endpoint with file upload.</p>
+        <input type="file" id="analyze-file" accept=".pdf,.docx,.doc">
+        <button onclick="testResumeAnalysis()">Test Resume Analysis</button>
+        <div id="analyze-result" class="result"></div>
+    </div>
+
+    <!-- Test 3: Parse PDF -->
+    <div class="test-section">
+        <h2>📋 Test 3: Parse PDF</h2>
+        <p>Tests the /api/parse-pdf endpoint with file upload.</p>
+        <input type="file" id="parse-file" accept=".pdf,.docx,.doc">
+        <button onclick="testParsePDF()">Test Parse PDF</button>
+        <div id="parse-result" class="result"></div>
+    </div>
+
+    <!-- Test 4: All Endpoints Status -->
+    <div class="test-section">
+        <h2>🚀 Test 4: Run All Tests</h2>
+        <p>Runs all tests to verify JSON response validity.</p>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <div id="all-result" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+
+        function displayResult(elementId, result, isSuccess = true) {
+            const element = document.getElementById(elementId);
+            element.textContent = JSON.stringify(result, null, 2);
+            element.className = `result ${isSuccess ? 'success' : 'error'}`;
+        }
+
+        async function testPDFGeneration() {
+            const resultDiv = document.getElementById('pdf-result');
+            resultDiv.textContent = 'Testing PDF Generation...';
+            resultDiv.className = 'result';
+
+            try {
+                const testData = {
+                    resumeData: {
+                        personalInfo: {
+                            fullName: "Jane Smith",
+                            email: "jane.smith@example.com",
+                            phone: "+1-555-0456",
+                            location: "San Francisco, CA"
+                        },
+                        workExperience: [{
+                            company: "Innovation Labs",
+                            position: "Senior Developer",
+                            startDate: "2021-03",
+                            endDate: "2024-01",
+                            description: "Led development of scalable web applications"
+                        }],
+                        skills: ["React", "TypeScript", "Python", "AWS"]
+                    },
+                    templateId: "professional"
+                };
+
+                const response = await fetch(`${API_BASE}/generate-pdf`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                const responseText = await response.text();
+                console.log('PDF Generation Raw Response:', responseText);
+
+                try {
+                    const jsonData = JSON.parse(responseText);
+                    displayResult('pdf-result', {
+                        status: response.status,
+                        success: true,
+                        message: 'Valid JSON response received',
+                        data: jsonData
+                    }, true);
+                } catch (parseError) {
+                    displayResult('pdf-result', {
+                        status: response.status,
+                        success: false,
+                        error: 'Invalid JSON response',
+                        rawResponse: responseText,
+                        parseError: parseError.message
+                    }, false);
+                }
+            } catch (error) {
+                displayResult('pdf-result', {
+                    success: false,
+                    error: 'Request failed',
+                    message: error.message
+                }, false);
+            }
+        }
+
+        async function testResumeAnalysis() {
+            const resultDiv = document.getElementById('analyze-result');
+            const fileInput = document.getElementById('analyze-file');
+            
+            if (!fileInput.files[0]) {
+                displayResult('analyze-result', {
+                    success: false,
+                    error: 'Please select a file first'
+                }, false);
+                return;
+            }
+
+            resultDiv.textContent = 'Testing Resume Analysis...';
+            resultDiv.className = 'result';
+
+            try {
+                const formData = new FormData();
+                formData.append('resume', fileInput.files[0]);
+
+                const response = await fetch(`${API_BASE}/analyze-resume`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const responseText = await response.text();
+                console.log('Resume Analysis Raw Response:', responseText);
+
+                try {
+                    const jsonData = JSON.parse(responseText);
+                    displayResult('analyze-result', {
+                        status: response.status,
+                        success: true,
+                        message: 'Valid JSON response received',
+                        data: jsonData
+                    }, true);
+                } catch (parseError) {
+                    displayResult('analyze-result', {
+                        status: response.status,
+                        success: false,
+                        error: 'Invalid JSON response',
+                        rawResponse: responseText,
+                        parseError: parseError.message
+                    }, false);
+                }
+            } catch (error) {
+                displayResult('analyze-result', {
+                    success: false,
+                    error: 'Request failed',
+                    message: error.message
+                }, false);
+            }
+        }
+
+        async function testParsePDF() {
+            const resultDiv = document.getElementById('parse-result');
+            const fileInput = document.getElementById('parse-file');
+            
+            if (!fileInput.files[0]) {
+                displayResult('parse-result', {
+                    success: false,
+                    error: 'Please select a file first'
+                }, false);
+                return;
+            }
+
+            resultDiv.textContent = 'Testing Parse PDF...';
+            resultDiv.className = 'result';
+
+            try {
+                const formData = new FormData();
+                formData.append('resume', fileInput.files[0]);
+
+                const response = await fetch(`${API_BASE}/parse-pdf`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const responseText = await response.text();
+                console.log('Parse PDF Raw Response:', responseText);
+
+                try {
+                    const jsonData = JSON.parse(responseText);
+                    displayResult('parse-result', {
+                        status: response.status,
+                        success: true,
+                        message: 'Valid JSON response received',
+                        data: jsonData
+                    }, true);
+                } catch (parseError) {
+                    displayResult('parse-result', {
+                        status: response.status,
+                        success: false,
+                        error: 'Invalid JSON response',
+                        rawResponse: responseText,
+                        parseError: parseError.message
+                    }, false);
+                }
+            } catch (error) {
+                displayResult('parse-result', {
+                    success: false,
+                    error: 'Request failed',
+                    message: error.message
+                }, false);
+            }
+        }
+
+        async function runAllTests() {
+            const resultDiv = document.getElementById('all-result');
+            resultDiv.textContent = 'Running comprehensive tests...';
+            resultDiv.className = 'result';
+
+            const results = {
+                pdfGeneration: null,
+                resumeAnalysis: null,
+                parsePdf: null,
+                summary: {
+                    totalTests: 3,
+                    passed: 0,
+                    failed: 0
+                }
+            };
+
+            // Test PDF Generation
+            try {
+                const response = await fetch(`${API_BASE}/generate-pdf`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        resumeData: {
+                            personalInfo: { fullName: "Test User", email: "test@example.com" },
+                            workExperience: [],
+                            skills: []
+                        },
+                        templateId: "modern"
+                    })
+                });
+                const text = await response.text();
+                JSON.parse(text); // Test if valid JSON
+                results.pdfGeneration = { status: 'PASS', message: 'Valid JSON response' };
+                results.summary.passed++;
+            } catch (error) {
+                results.pdfGeneration = { status: 'FAIL', error: error.message };
+                results.summary.failed++;
+            }
+
+            // Test Resume Analysis (with dummy file)
+            try {
+                const formData = new FormData();
+                const dummyFile = new File(['test content'], 'test.txt', { type: 'text/plain' });
+                formData.append('resume', dummyFile);
+                
+                const response = await fetch(`${API_BASE}/analyze-resume`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const text = await response.text();
+                JSON.parse(text); // Test if valid JSON
+                results.resumeAnalysis = { status: 'PASS', message: 'Valid JSON response' };
+                results.summary.passed++;
+            } catch (error) {
+                results.resumeAnalysis = { status: 'FAIL', error: error.message };
+                results.summary.failed++;
+            }
+
+            // Test Parse PDF (with dummy file)
+            try {
+                const formData = new FormData();
+                const dummyFile = new File(['test content'], 'test.txt', { type: 'text/plain' });
+                formData.append('resume', dummyFile);
+                
+                const response = await fetch(`${API_BASE}/parse-pdf`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const text = await response.text();
+                JSON.parse(text); // Test if valid JSON
+                results.parsePdf = { status: 'PASS', message: 'Valid JSON response' };
+                results.summary.passed++;
+            } catch (error) {
+                results.parsePdf = { status: 'FAIL', error: error.message };
+                results.summary.failed++;
+            }
+
+            const allPassed = results.summary.failed === 0;
+            displayResult('all-result', results, allPassed);
+        }
+    </script>
+</body>
+</html>

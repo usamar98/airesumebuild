@@ -579,11 +579,11 @@ export default function ResumeBuilder() {
             </div>
             <div className="flex items-center space-x-4">
               <Link 
-                to="/cover-letter" 
+                to="/upwork-proposal" 
                 className="flex items-center text-gray-600 hover:text-blue-600 transition-colors px-3 py-2 rounded-md border border-gray-300 hover:border-blue-300"
               >
                 <DocumentDuplicateIcon className="h-5 w-5 mr-2" />
-                {t('navigation.generateCoverLetter')}
+                Generate Upwork Proposal
               </Link>
             </div>
           </div>

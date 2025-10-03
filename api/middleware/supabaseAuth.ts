@@ -37,8 +37,12 @@ export const authenticateSupabaseToken = async (
   try {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    
+    console.log('Auth middleware - Headers:', req.headers.authorization ? 'Present' : 'Missing');
+    console.log('Auth middleware - Token:', token ? `${token.substring(0, 20)}...` : 'Missing');
 
     if (!token) {
+      console.log('Auth middleware - No token provided');
       res.status(401).json({ 
         success: false,
         message: 'Access denied. Please log in to use this feature.',
@@ -48,9 +52,11 @@ export const authenticateSupabaseToken = async (
     }
 
     // Verify the JWT token with Supabase
+    console.log('Auth middleware - Verifying token with Supabase...');
     const { data: { user }, error } = await getSupabaseClient().auth.getUser(token);
 
     if (error || !user) {
+      console.log('Auth middleware - Token verification failed:', error?.message || 'No user');
       res.status(401).json({ 
         success: false,
         message: 'Invalid token. Please log in again.',
@@ -59,7 +65,10 @@ export const authenticateSupabaseToken = async (
       return;
     }
 
+    console.log('Auth middleware - Token verified, user ID:', user.id);
+
     // Get user profile from users table
+    console.log('Auth middleware - Fetching user profile...');
     const { data: profile, error: profileError } = await getSupabaseClient()
       .from('users')
       .select('name, role')
@@ -67,7 +76,7 @@ export const authenticateSupabaseToken = async (
       .single();
 
     if (profileError) {
-      console.error('Error fetching user profile:', profileError);
+      console.error('Auth middleware - Error fetching user profile:', profileError);
       res.status(401).json({ 
         success: false,
         message: 'User profile not found.',
@@ -75,6 +84,9 @@ export const authenticateSupabaseToken = async (
       });
       return;
     }
+
+    console.log('Auth middleware - Profile found:', profile ? 'Yes' : 'No');
+    console.log('Auth middleware - Setting user data and proceeding...');
 
     req.user = {
       id: user.id,

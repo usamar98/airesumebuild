@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import OpenAI from 'openai';
 import mammoth from 'mammoth';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { AnalyzeResumeRequest, AnalyzeResumeResponse } from '../../src/types';
+import { AnalyzeResumeRequest, AnalyzeResumeResponse } from '../../src/types/index.js';
 
 const ANALYSIS_SYSTEM_PROMPT = `You are a senior recruiter and ATS expert. Analyze the resume below. Return JSON with the following fields:
 - overall_score (0–100, based on clarity, structure, ATS keyword match, and grammar)
@@ -13,12 +13,20 @@ const ANALYSIS_SYSTEM_PROMPT = `You are a senior recruiter and ATS expert. Analy
 
 Return only valid JSON without any additional text or formatting.`;
 
-export const analyzeResume = async (req: Request, res: Response): Promise<void> => {
+export const analyzeResume = async (req: Request, res: Response) => {
+  console.log('analyzeResume endpoint called');
+  console.log('Request file:', req.file ? 'File present' : 'No file');
+  console.log('Request body:', req.body);
+  
   try {
+    console.log('Entering try block');
+    
     const file = req.file;
+    console.log('File check:', file ? 'File exists' : 'No file');
     
     // Validate file upload
     if (!file) {
+      console.log('Returning 400 - No file uploaded');
       res.status(400).json({
           success: false,
           error: 'No file uploaded',
@@ -34,16 +42,22 @@ export const analyzeResume = async (req: Request, res: Response): Promise<void> 
         } as AnalyzeResumeResponse);
       return;
     }
+    console.log('File details:', { originalname: file.originalname, mimetype: file.mimetype, size: file.size });
 
     // Extract text from uploaded file
+    console.log('Starting text extraction');
     let resumeText: string;
+    const fileExtension = file.originalname.split('.').pop()?.toLowerCase();
+    console.log('File extension:', fileExtension);
     try {
+      console.log('Checking file mimetype:', file.mimetype);
       if (file.mimetype === 'application/pdf') {
         resumeText = await extractTextFromPDF(file.buffer);
       } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
         resumeText = await extractTextFromDOCX(file.buffer);
       } else {
-        res.status(400).json({
+        console.log('Unsupported file type detected, returning error');
+        const errorResponse = {
           success: false,
           error: 'Unsupported file type. Please upload a PDF or DOCX file.',
           overallScore: 0,
@@ -55,7 +69,9 @@ export const analyzeResume = async (req: Request, res: Response): Promise<void> 
           weaknesses: [],
           missingKeywords: [],
           suggestions: []
-        } as AnalyzeResumeResponse);
+        } as AnalyzeResumeResponse;
+        console.log('Sending error response:', JSON.stringify(errorResponse));
+        res.status(400).json(errorResponse);
         return;
       }
     } catch (extractError) {
@@ -235,9 +251,32 @@ export const analyzeResume = async (req: Request, res: Response): Promise<void> 
 
   } catch (error) {
     console.error('Error analyzing resume:', error);
-    res.status(500).json({
+    
+    // Provide more specific error messages based on error type
+    let errorMessage = 'Server internal error';
+    let statusCode = 500;
+    
+    if (error instanceof Error) {
+      if (error.message.includes('Failed to extract text from PDF')) {
+        errorMessage = 'Unable to extract text from PDF. The file may be image-based, corrupted, or password-protected.';
+        statusCode = 400;
+      } else if (error.message.includes('Failed to extract text from DOCX')) {
+        errorMessage = 'Unable to extract text from DOCX file. Please ensure the file is not corrupted.';
+        statusCode = 400;
+      } else if (error.message.includes('Unsupported file type')) {
+        errorMessage = 'Unsupported file type. Please upload a PDF or DOCX file.';
+        statusCode = 400;
+      } else if (error.message.includes('OpenAI')) {
+        errorMessage = 'AI analysis service temporarily unavailable. Please try again later.';
+        statusCode = 503;
+      } else {
+        errorMessage = `Server internal error: ${error.message}`;
+      }
+    }
+    
+    res.status(statusCode).json({
       success: false,
-      error: 'Internal server error',
+      error: errorMessage,
       overallScore: 0,
       contentScore: 0,
       formattingScore: 0,
@@ -255,20 +294,7 @@ export const analyzeResume = async (req: Request, res: Response): Promise<void> 
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   let lastError: Error | null = null;
   
-  // Method 1: Try pdf-parse first (most reliable for text-based PDFs)
-  try {
-    const pdfParse = require('pdf-parse');
-    const data = await pdfParse(buffer);
-    if (data.text && data.text.trim().length > 0) {
-      console.log('PDF text extracted successfully using pdf-parse');
-      return data.text.trim();
-    }
-  } catch (error) {
-    console.log('pdf-parse failed:', error);
-    lastError = error as Error;
-  }
-  
-  // Method 2: Try pdfjs-dist as fallback
+  // Method 1: Try pdfjs-dist as primary method
   try {
     const uint8Array = new Uint8Array(buffer);
     const loadingTask = pdfjsLib.getDocument({ 
@@ -299,7 +325,7 @@ async function extractTextFromPDF(buffer: Buffer): Promise<string> {
     lastError = error as Error;
   }
   
-  // Method 3: Basic buffer text extraction as last resort
+  // Method 2: Basic buffer text extraction as fallback
   try {
     const bufferText = buffer.toString('utf8');
     const textMatch = bufferText.match(/BT\s+.*?ET/gs);

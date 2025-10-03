@@ -36,7 +36,7 @@ export default function ResumeUploader({ onDataParsed, className = '' }: ResumeU
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('resume', file);
 
       const response = await fetch('/api/parse-pdf', {
         method: 'POST',
