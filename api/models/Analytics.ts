@@ -1,5 +1,18 @@
 import { supabase } from '../database/supabase.js';
 
+// Import getSupabaseClient function for admin operations
+const getSupabaseClient = () => {
+  const { createClient } = require('@supabase/supabase-js');
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment variables');
+  }
+  
+  return createClient(supabaseUrl, supabaseServiceKey);
+};
+
 export interface AnalyticsEvent {
   id?: number;
   user_id?: string;

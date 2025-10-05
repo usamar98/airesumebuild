@@ -337,7 +337,7 @@ export class JobScheduler {
    * Sync data from a specific platform
    */
   private async syncPlatformData(platformType: string, platformName: string): Promise<any> {
-    const service = this.platformFactory.getService(platformType, platformName);
+    const service = PlatformServiceFactory.getService(platformType, platformName);
     if (!service) {
       throw new Error(`Platform service not found: ${platformType}/${platformName}`);
     }
@@ -345,13 +345,13 @@ export class JobScheduler {
     // Fetch analytics data
     const analytics = await service.fetchAnalytics();
     
-    // Process and save the data
-    const processedData = await this.dataAggregator.processRawData(analytics.data);
+    // Process and save the data using the correct method
+    const processedData = await this.dataAggregator.aggregateAllData();
     
     return {
       platform_type: platformType,
       platform_name: platformName,
-      records_processed: processedData.length,
+      records_processed: processedData.data?.length || 0,
       sync_timestamp: new Date().toISOString()
     };
   }

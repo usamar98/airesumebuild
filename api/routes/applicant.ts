@@ -95,21 +95,26 @@ router.get('/applications', authenticateSupabaseToken, async (req: SupabaseAuthe
     }
 
     // Transform the data to match the expected format
-    const transformedApplications = applications?.map(app => ({
-      id: app.id,
-      job_id: app.job_postings?.id,
-      job_title: app.job_postings?.title,
-      company_name: app.job_postings?.company_name,
-      status: app.status,
-      applied_at: app.applied_at,
-      cover_letter: app.cover_letter,
-      resume_url: app.resume_url,
-      job_location: app.job_postings?.location,
-      job_type: app.job_postings?.job_type,
-      salary_range: app.job_postings?.salary_min && app.job_postings?.salary_max 
-        ? `$${app.job_postings.salary_min} - $${app.job_postings.salary_max}`
-        : null
-    })) || [];
+    const transformedApplications = applications?.map(app => {
+      // Handle case where job_postings might be an array or single object
+      const jobPosting = Array.isArray(app.job_postings) ? app.job_postings[0] : app.job_postings;
+      
+      return {
+        id: app.id,
+        job_id: jobPosting?.id,
+        job_title: jobPosting?.title,
+        company_name: jobPosting?.company_name,
+        status: app.status,
+        applied_at: app.applied_at,
+        cover_letter: app.cover_letter,
+        resume_url: app.resume_url,
+        job_location: jobPosting?.location,
+        job_type: jobPosting?.job_type,
+        salary_range: jobPosting?.salary_min && jobPosting?.salary_max 
+          ? `$${jobPosting.salary_min} - $${jobPosting.salary_max}`
+          : null
+      };
+    }) || [];
 
     res.json(transformedApplications);
   } catch (error) {
@@ -287,20 +292,25 @@ router.get('/saved-jobs', authenticateSupabaseToken, async (req: SupabaseAuthent
     }
 
     // Transform the data to match the expected format
-    const transformedSavedJobs = savedJobs?.map(savedJob => ({
-      id: savedJob.id,
-      job_id: savedJob.job_id,
-      title: savedJob.job_postings?.title || '',
-      company_name: savedJob.job_postings?.company_name || '',
-      location: savedJob.job_postings?.location || '',
-      budget: savedJob.job_postings?.salary_min && savedJob.job_postings?.salary_max 
-        ? `$${savedJob.job_postings.salary_min} - $${savedJob.job_postings.salary_max}`
-        : '',
-      posted_date: savedJob.job_postings?.posted_date || '',
-      saved_at: savedJob.saved_at,
-      is_posted_job: true,
-      source_url: null
-    })) || [];
+    const transformedSavedJobs = savedJobs?.map(savedJob => {
+      // Handle case where job_postings might be an array or single object
+      const jobPosting = Array.isArray(savedJob.job_postings) ? savedJob.job_postings[0] : savedJob.job_postings;
+      
+      return {
+        id: savedJob.id,
+        job_id: savedJob.job_id,
+        title: jobPosting?.title || '',
+        company_name: jobPosting?.company_name || '',
+        location: jobPosting?.location || '',
+        budget: jobPosting?.salary_min && jobPosting?.salary_max 
+          ? `$${jobPosting.salary_min} - $${jobPosting.salary_max}`
+          : '',
+        posted_date: jobPosting?.posted_date || '',
+        saved_at: savedJob.saved_at,
+        is_posted_job: true,
+        source_url: null
+      };
+    }) || [];
 
     res.json(transformedSavedJobs);
   } catch (error) {

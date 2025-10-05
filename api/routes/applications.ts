@@ -196,7 +196,7 @@ router.post('/', authenticateSupabaseToken, upload.single('resume'), async (req:
     // Check if job posting exists and is published
     const { data: jobPosting, error: jobError } = await supabase
       .from('job_postings')
-      .select('id, status, application_deadline')
+      .select('id, status, application_deadline, posted_by')
       .eq('id', job_posting_id)
       .eq('status', 'published')
       .single();

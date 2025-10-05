@@ -148,17 +148,23 @@ router.get('/applications', authenticateSupabaseToken, async (req: SupabaseAuthe
     }
 
     // Transform the data to match the expected format
-    const transformedApplications = applications?.map(app => ({
-      id: app.id,
-      job_id: app.job_postings?.id,
-      job_title: app.job_postings?.title,
-      applicant_name: app.users?.name || app.users?.email?.split('@')[0] || 'Unknown',
-      applicant_email: app.users?.email,
-      status: app.status,
-      applied_at: app.applied_at,
-      cover_letter: app.cover_letter,
-      resume_url: app.resume_url
-    })) || [];
+    const transformedApplications = applications?.map(app => {
+      // Handle case where job_postings and users might be arrays or single objects
+      const jobPosting = Array.isArray(app.job_postings) ? app.job_postings[0] : app.job_postings;
+      const user = Array.isArray(app.users) ? app.users[0] : app.users;
+      
+      return {
+        id: app.id,
+        job_id: jobPosting?.id,
+        job_title: jobPosting?.title,
+        applicant_name: user?.name || user?.email?.split('@')[0] || 'Unknown',
+        applicant_email: user?.email,
+        status: app.status,
+        applied_at: app.applied_at,
+        cover_letter: app.cover_letter,
+        resume_url: app.resume_url
+      };
+    }) || [];
 
     res.json(transformedApplications);
   } catch (error) {

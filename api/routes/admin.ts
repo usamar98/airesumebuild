@@ -24,7 +24,7 @@ router.get('/dashboard', async (req: SupabaseAuthenticatedRequest, res: Response
       UserModel.getUserStats(),
       AnalyticsModel.getFeatureUsageStats(30),
       AnalyticsModel.getDailyActiveUsers(30),
-      AnalyticsModel.getFeatureAdoptionRate()
+      AnalyticsModel.getFeatureAdoptionRate('job_search', 30)
     ]);
 
     res.json({
@@ -90,7 +90,7 @@ router.get('/users/:id', async (req: SupabaseAuthenticatedRequest, res: Response
 
     res.json({
       user: userWithoutPassword,
-      analytics: userData.analytics
+      analytics: userData.analytics_data
     });
   } catch (error: any) {
     console.error('User details error:', error);
@@ -240,7 +240,7 @@ router.get('/users/:id/export', async (req: SupabaseAuthenticatedRequest, res: R
     }
 
     const userData = await AnalyticsModel.exportUserData(userId);
-    if (!userData.user) {
+    if (!userData.user_info) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
@@ -268,7 +268,8 @@ router.get('/users/:id/export', async (req: SupabaseAuthenticatedRequest, res: R
  */
 router.get('/metrics/adoption', async (req: SupabaseAuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const adoption = await AnalyticsModel.getFeatureAdoptionRate();
+    const feature = req.query.feature as string || 'job_search';
+    const adoption = await AnalyticsModel.getFeatureAdoptionRate(feature, 30);
     res.json({ adoption });
   } catch (error: any) {
     console.error('Adoption metrics error:', error);
