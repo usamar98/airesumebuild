@@ -5,9 +5,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSupabaseAuth } from '../contexts/SupabaseAuthContext';
-import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle, Briefcase, Building2, Users } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle, Briefcase, Building2, Users, Sparkles } from 'lucide-react';
 import { isFeatureEnabled } from '../config/featureFlags';
-import ComingSoon from '../components/ComingSoon';
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -23,6 +22,7 @@ const Register: React.FC = () => {
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
   
   const { register, isAuthenticated } = useSupabaseAuth();
   const navigate = useNavigate();
@@ -143,9 +143,9 @@ const Register: React.FC = () => {
   };
 
   const getPasswordStrengthColor = () => {
-    if (passwordStrength <= 2) return 'bg-red-500';
-    if (passwordStrength <= 3) return 'bg-yellow-500';
-    return 'bg-green-500';
+    if (passwordStrength <= 2) return 'from-red-500 to-red-600';
+    if (passwordStrength <= 3) return 'from-yellow-500 to-orange-500';
+    return 'from-green-500 to-emerald-600';
   };
 
   const getPasswordStrengthText = () => {
@@ -155,346 +155,416 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 px-4 py-8 relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/20 to-cyan-600/20 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="max-w-lg w-full space-y-8 relative z-10">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 md:p-10 transform transition-all duration-300 hover:shadow-3xl">
           {/* Header */}
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl mb-4 shadow-lg">
+              <Sparkles className="h-8 w-8 text-white" />
+            </div>
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent mb-3">
               Create Account
             </h2>
-            <p className="text-gray-600">
-              Join us to start building amazing resumes
+            <p className="text-gray-600 text-lg">
+              Join our community and start building amazing resumes
             </p>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
-              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-              <span className="text-red-700 text-sm">{error}</span>
+            <div className="mb-6 p-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200/50 rounded-2xl flex items-center space-x-3 shadow-sm animate-in slide-in-from-top-2 duration-300">
+              <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              </div>
+              <span className="text-red-700 text-sm font-medium">{error}</span>
             </div>
           )}
 
           {/* Success Message */}
           {success && (
-            <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-              <span className="text-green-700 text-sm">{success}</span>
+            <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50 rounded-2xl flex items-center space-x-3 shadow-sm animate-in slide-in-from-top-2 duration-300">
+              <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+              <span className="text-green-700 text-sm font-medium">{success}</span>
             </div>
           )}
 
           {/* Registration Form */}
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-4">
-              {/* Name Field */}
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {/* Name Field */}
+            <div className="relative group">
+              <div className="relative">
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  onFocus={() => setFocusedField('name')}
+                  onBlur={() => setFocusedField(null)}
+                  className="peer w-full px-4 py-4 pl-12 bg-gray-50/50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 placeholder-transparent"
+                  placeholder="Full Name"
+                />
+                <label
+                  htmlFor="name"
+                  className={`absolute left-12 transition-all duration-300 pointer-events-none ${
+                    formData.name || focusedField === 'name'
+                      ? '-top-2 left-4 text-xs text-blue-600 bg-white px-2 rounded-full'
+                      : 'top-4 text-gray-500'
+                  }`}
+                >
                   Full Name
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    autoComplete="name"
-                    required
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    placeholder="Enter your full name"
-                  />
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <User className={`h-5 w-5 transition-colors duration-300 ${
+                    focusedField === 'name' ? 'text-blue-600' : 'text-gray-400'
+                  }`} />
                 </div>
               </div>
+            </div>
 
-              {/* Email Field */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            {/* Email Field */}
+            <div className="relative group">
+              <div className="relative">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  onFocus={() => setFocusedField('email')}
+                  onBlur={() => setFocusedField(null)}
+                  className="peer w-full px-4 py-4 pl-12 bg-gray-50/50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 placeholder-transparent"
+                  placeholder="Email Address"
+                />
+                <label
+                  htmlFor="email"
+                  className={`absolute left-12 transition-all duration-300 pointer-events-none ${
+                    formData.email || focusedField === 'email'
+                      ? '-top-2 left-4 text-xs text-blue-600 bg-white px-2 rounded-full'
+                      : 'top-4 text-gray-500'
+                  }`}
+                >
                   Email Address
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    placeholder="Enter your email"
-                  />
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Mail className={`h-5 w-5 transition-colors duration-300 ${
+                    focusedField === 'email' ? 'text-blue-600' : 'text-gray-400'
+                  }`} />
                 </div>
               </div>
+            </div>
 
-              {/* Role Selection Field */}
-              <div>
-                <label htmlFor="userRole" className="block text-sm font-medium text-gray-700 mb-2">
-                  I am a *
-                </label>
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 gap-3">
-                    {/* Job Seeker Option */}
-                    <label className={`relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+            {/* Role Selection Field */}
+            <div className="space-y-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Choose your role
+              </label>
+              <div className="grid grid-cols-1 gap-3">
+                {/* Job Seeker Option */}
+                <label className={`relative flex items-center p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${
+                  formData.userRole === 'job_seeker' 
+                    ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg shadow-blue-500/20' 
+                    : 'border-gray-200 hover:border-gray-300 bg-white/50'
+                }`}>
+                  <input
+                    type="radio"
+                    name="userRole"
+                    value="job_seeker"
+                    checked={formData.userRole === 'job_seeker'}
+                    onChange={handleInputChange}
+                    className="sr-only"
+                  />
+                  <div className="flex items-center space-x-4 flex-1">
+                    <div className={`p-3 rounded-xl transition-all duration-300 ${
                       formData.userRole === 'job_seeker' 
-                        ? 'border-blue-500 bg-blue-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        ? 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg' 
+                        : 'bg-gray-100'
                     }`}>
-                      <input
-                        type="radio"
-                        name="userRole"
-                        value="job_seeker"
-                        checked={formData.userRole === 'job_seeker'}
-                        onChange={handleInputChange}
-                        className="sr-only"
-                      />
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-lg ${
-                          formData.userRole === 'job_seeker' ? 'bg-blue-100' : 'bg-gray-100'
-                        }`}>
-                          <Briefcase className={`h-5 w-5 ${
-                            formData.userRole === 'job_seeker' ? 'text-blue-600' : 'text-gray-600'
-                          }`} />
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">Job Seeker</div>
-                          <div className="text-sm text-gray-600">Looking for job opportunities</div>
-                        </div>
-                      </div>
-                      {formData.userRole === 'job_seeker' && (
-                        <div className="absolute top-2 right-2">
-                          <CheckCircle className="h-5 w-5 text-blue-600" />
-                        </div>
-                      )}
-                    </label>
-
-                    {/* Employer Option */}
-                    <label className={`relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.userRole === 'employer' 
-                        ? 'border-blue-500 bg-blue-50' 
-                        : 'border-gray-300 hover:border-gray-400'
-                    } ${!isFeatureEnabled('employerRegistration') ? 'opacity-60' : ''}`}>
-                      <input
-                        type="radio"
-                        name="userRole"
-                        value="employer"
-                        checked={formData.userRole === 'employer'}
-                        onChange={handleInputChange}
-                        className="sr-only"
-                        disabled={!isFeatureEnabled('employerRegistration')}
-                      />
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-lg ${
-                          formData.userRole === 'employer' ? 'bg-blue-100' : 'bg-gray-100'
-                        }`}>
-                          <Building2 className={`h-5 w-5 ${
-                            formData.userRole === 'employer' ? 'text-blue-600' : 'text-gray-600'
-                          }`} />
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">Employer</div>
-                          <div className="text-sm text-gray-600">Hiring talent for my company</div>
-                        </div>
-                      </div>
-                      {formData.userRole === 'employer' && (
-                        <div className="absolute top-2 right-2">
-                          <CheckCircle className="h-5 w-5 text-blue-600" />
-                        </div>
-                      )}
-                      {!isFeatureEnabled('employerRegistration') && (
-                        <ComingSoon
-                          variant="overlay"
-                          size="small"
-                          title="Employer Registration"
-                          description="Employer features are coming soon! Stay tuned for updates."
-                          className="rounded-lg"
-                        />
-                      )}
-                    </label>
-
-                    {/* Both Option */}
-                    <label className={`relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.userRole === 'dual' 
-                        ? 'border-blue-500 bg-blue-50' 
-                        : 'border-gray-300 hover:border-gray-400'
-                    } ${!isFeatureEnabled('employerRegistration') ? 'opacity-60' : ''}`}>
-                      <input
-                        type="radio"
-                        name="userRole"
-                        value="dual"
-                        checked={formData.userRole === 'dual'}
-                        onChange={handleInputChange}
-                        className="sr-only"
-                        disabled={!isFeatureEnabled('employerRegistration')}
-                      />
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-lg ${
-                          formData.userRole === 'dual' ? 'bg-blue-100' : 'bg-gray-100'
-                        }`}>
-                          <Users className={`h-5 w-5 ${
-                            formData.userRole === 'dual' ? 'text-blue-600' : 'text-gray-600'
-                          }`} />
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">Both</div>
-                          <div className="text-sm text-gray-600">I'm both looking for jobs and hiring</div>
-                        </div>
-                      </div>
-                      {formData.userRole === 'dual' && (
-                        <div className="absolute top-2 right-2">
-                          <CheckCircle className="h-5 w-5 text-blue-600" />
-                        </div>
-                      )}
-                      {!isFeatureEnabled('employerRegistration') && (
-                        <ComingSoon
-                          variant="overlay"
-                          size="small"
-                          title="Dual Role Registration"
-                          description="Dual role features are coming soon! Stay tuned for updates."
-                          className="rounded-lg"
-                        />
-                      )}
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Password Field */}
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    required
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    placeholder="Create a password"
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    )}
-                  </button>
-                </div>
-                
-                {/* Password Strength Indicator */}
-                {formData.password && (
-                  <div className="mt-2">
-                    <div className="flex items-center space-x-2">
-                      <div className="flex-1 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor()}`}
-                          style={{ width: `${(passwordStrength / 5) * 100}%` }}
-                        ></div>
-                      </div>
-                      <span className={`text-xs font-medium ${
-                        passwordStrength <= 2 ? 'text-red-600' : 
-                        passwordStrength <= 3 ? 'text-yellow-600' : 'text-green-600'
-                      }`}>
-                        {getPasswordStrengthText()}
-                      </span>
+                      <Briefcase className={`h-6 w-6 ${
+                        formData.userRole === 'job_seeker' ? 'text-white' : 'text-gray-600'
+                      }`} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900 text-lg">Job Seeker</div>
+                      <div className="text-sm text-gray-600">Looking for job opportunities</div>
                     </div>
                   </div>
-                )}
-              </div>
+                  {formData.userRole === 'job_seeker' && (
+                    <div className="absolute top-3 right-3">
+                      <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                        <CheckCircle className="h-4 w-4 text-white" />
+                      </div>
+                    </div>
+                  )}
+                </label>
 
-              {/* Confirm Password Field */}
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                {/* Employer Option */}
+                <label className={`relative flex items-center p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${
+                  formData.userRole === 'employer' 
+                    ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg shadow-blue-500/20' 
+                    : 'border-gray-200 hover:border-gray-300 bg-white/50'
+                } ${!isFeatureEnabled('employerRegistration') ? 'opacity-60' : ''}`}>
+                  <input
+                    type="radio"
+                    name="userRole"
+                    value="employer"
+                    checked={formData.userRole === 'employer'}
+                    onChange={handleInputChange}
+                    className="sr-only"
+                    disabled={!isFeatureEnabled('employerRegistration')}
+                  />
+                  <div className="flex items-center space-x-4 flex-1">
+                    <div className={`p-3 rounded-xl transition-all duration-300 ${
+                      formData.userRole === 'employer' 
+                        ? 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg' 
+                        : 'bg-gray-100'
+                    }`}>
+                      <Building2 className={`h-6 w-6 ${
+                        formData.userRole === 'employer' ? 'text-white' : 'text-gray-600'
+                      }`} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900 text-lg">Employer</div>
+                      <div className="text-sm text-gray-600">Hiring talent for my company</div>
+                    </div>
+                  </div>
+                  {formData.userRole === 'employer' && (
+                    <div className="absolute top-3 right-3">
+                      <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                        <CheckCircle className="h-4 w-4 text-white" />
+                      </div>
+                    </div>
+                  )}
+                  {!isFeatureEnabled('employerRegistration') && (
+                    <div className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                      <div className="text-center px-4">
+                        <h3 className="font-semibold text-gray-700 text-sm mb-1">Coming Soon</h3>
+                        <p className="text-gray-500 text-xs">Employer features are under development</p>
+                      </div>
+                    </div>
+                  )}
+                </label>
+
+                {/* Both Option */}
+                <label className={`relative flex items-center p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${
+                  formData.userRole === 'dual' 
+                    ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg shadow-blue-500/20' 
+                    : 'border-gray-200 hover:border-gray-300 bg-white/50'
+                } ${!isFeatureEnabled('employerRegistration') ? 'opacity-60' : ''}`}>
+                  <input
+                    type="radio"
+                    name="userRole"
+                    value="dual"
+                    checked={formData.userRole === 'dual'}
+                    onChange={handleInputChange}
+                    className="sr-only"
+                    disabled={!isFeatureEnabled('employerRegistration')}
+                  />
+                  <div className="flex items-center space-x-4 flex-1">
+                    <div className={`p-3 rounded-xl transition-all duration-300 ${
+                      formData.userRole === 'dual' 
+                        ? 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg' 
+                        : 'bg-gray-100'
+                    }`}>
+                      <Users className={`h-6 w-6 ${
+                        formData.userRole === 'dual' ? 'text-white' : 'text-gray-600'
+                      }`} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900 text-lg">Both</div>
+                      <div className="text-sm text-gray-600">I'm both looking for jobs and hiring</div>
+                    </div>
+                  </div>
+                  {formData.userRole === 'dual' && (
+                    <div className="absolute top-3 right-3">
+                      <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                        <CheckCircle className="h-4 w-4 text-white" />
+                      </div>
+                    </div>
+                  )}
+                  {!isFeatureEnabled('employerRegistration') && (
+                    <div className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                      <div className="text-center px-4">
+                        <h3 className="font-semibold text-gray-700 text-sm mb-1">Coming Soon</h3>
+                        <p className="text-gray-500 text-xs">Dual role features are under development</p>
+                      </div>
+                    </div>
+                  )}
+                </label>
+              </div>
+            </div>
+
+            {/* Password Field */}
+            <div className="relative group">
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  required
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  onFocus={() => setFocusedField('password')}
+                  onBlur={() => setFocusedField(null)}
+                  className="peer w-full px-4 py-4 pl-12 pr-12 bg-gray-50/50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 placeholder-transparent"
+                  placeholder="Password"
+                />
+                <label
+                  htmlFor="password"
+                  className={`absolute left-12 transition-all duration-300 pointer-events-none ${
+                    formData.password || focusedField === 'password'
+                      ? '-top-2 left-4 text-xs text-blue-600 bg-white px-2 rounded-full'
+                      : 'top-4 text-gray-500'
+                  }`}
+                >
+                  Password
+                </label>
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock className={`h-5 w-5 transition-colors duration-300 ${
+                    focusedField === 'password' ? 'text-blue-600' : 'text-gray-400'
+                  }`} />
+                </div>
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
+                  )}
+                </button>
+              </div>
+              
+              {/* Password Strength Indicator */}
+              {formData.password && (
+                <div className="mt-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className={`h-2 rounded-full transition-all duration-500 bg-gradient-to-r ${getPasswordStrengthColor()}`}
+                        style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                      passwordStrength <= 2 ? 'text-red-700 bg-red-100' : 
+                      passwordStrength <= 3 ? 'text-yellow-700 bg-yellow-100' : 'text-green-700 bg-green-100'
+                    }`}>
+                      {getPasswordStrengthText()}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Confirm Password Field */}
+            <div className="relative group">
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  required
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  onFocus={() => setFocusedField('confirmPassword')}
+                  onBlur={() => setFocusedField(null)}
+                  className="peer w-full px-4 py-4 pl-12 pr-12 bg-gray-50/50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 placeholder-transparent"
+                  placeholder="Confirm Password"
+                />
+                <label
+                  htmlFor="confirmPassword"
+                  className={`absolute left-12 transition-all duration-300 pointer-events-none ${
+                    formData.confirmPassword || focusedField === 'confirmPassword'
+                      ? '-top-2 left-4 text-xs text-blue-600 bg-white px-2 rounded-full'
+                      : 'top-4 text-gray-500'
+                  }`}
+                >
                   Confirm Password
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    required
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    placeholder="Confirm your password"
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    )}
-                  </button>
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock className={`h-5 w-5 transition-colors duration-300 ${
+                    focusedField === 'confirmPassword' ? 'text-blue-600' : 'text-gray-400'
+                  }`} />
                 </div>
-                
-                {/* Password Match Indicator */}
-                {formData.confirmPassword && (
-                  <div className="mt-2 flex items-center space-x-2">
-                    {formData.password === formData.confirmPassword ? (
-                      <>
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-sm text-green-600">Passwords match</span>
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle className="h-4 w-4 text-red-500" />
-                        <span className="text-sm text-red-600">Passwords do not match</span>
-                      </>
-                    )}
-                  </div>
-                )}
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
+                  )}
+                </button>
               </div>
+              
+              {/* Password Match Indicator */}
+              {formData.confirmPassword && (
+                <div className="mt-3 flex items-center space-x-2">
+                  {formData.password === formData.confirmPassword ? (
+                    <div className="flex items-center space-x-2 text-green-600">
+                      <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center">
+                        <CheckCircle className="h-3 w-3" />
+                      </div>
+                      <span className="text-sm font-medium">Passwords match</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2 text-red-600">
+                      <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center">
+                        <AlertCircle className="h-3 w-3" />
+                      </div>
+                      <span className="text-sm font-medium">Passwords do not match</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-semibold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transform transition-all duration-300 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               {isSubmitting ? (
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Creating account...</span>
+                <div className="flex items-center justify-center space-x-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                  <span>Creating your account...</span>
                 </div>
               ) : (
-                'Create Account'
+                <span className="flex items-center justify-center space-x-2">
+                  <span>Create Account</span>
+                  <Sparkles className="h-5 w-5" />
+                </span>
               )}
             </button>
           </form>
 
           {/* Footer */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+          <div className="mt-8 text-center">
+            <p className="text-gray-600">
               Already have an account?{' '}
               <Link
                 to="/login"
-                className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
+                className="font-semibold text-blue-600 hover:text-blue-700 transition-colors duration-300 hover:underline"
               >
                 Sign in here
               </Link>
