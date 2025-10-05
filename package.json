@@ -100,5 +100,9 @@
     "vite": "^6.3.5",
     "vite-plugin-trae-solo-badge": "^1.0.0",
     "vite-tsconfig-paths": "^5.1.4"
+  },
+  "railway": {
+    "build": "npm run build",
+    "start": "npm start"
   }
 }
