@@ -370,6 +370,26 @@ tmp/
 # Debug files
 debug-*.js
 test-*.js
+test-*.html
+test-*.cjs
+test-*.ps1
+test-*.sql
+test-*.md
+test-*.png
+test-*.txt
 verify-*.js
 analyze-*.js
 fix-*.js
+check-*.js
+check-*.html
+browser-*.js
+auth-test.*
+*-test.*
+*-debug.*
+trigger-*.js
+inject-*.js
+navigate-*.js
+comprehensive-*.js
+minimal-*.js
+simple-*.js
+font-*.js
