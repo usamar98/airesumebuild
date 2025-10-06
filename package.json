@@ -10,6 +10,7 @@
     "check": "tsc --noEmit",
     "server:dev": "nodemon",
     "start": "tsx api/server.ts",
+    "start:frontend": "serve -s dist",
     "dev": "concurrently \"npm run client:dev\" \"npm run server:dev\"",
     "dev:client-only": "npm run client:dev",
     "migrate:users": "tsx scripts/migrate-users.js",
