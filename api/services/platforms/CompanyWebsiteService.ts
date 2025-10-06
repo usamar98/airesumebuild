@@ -547,4 +547,102 @@ export class CompanyWebsiteService extends BasePlatformService {
       return this.handleError(error, 'getAnalyticsSummary');
     }
   }
+
+  /**
+   * Track page view
+   */
+  async trackPageView(trackingData: any): Promise<{ trackingId: string }> {
+    try {
+      // For now, just return a tracking ID
+      // In a real implementation, this would send data to analytics service
+      const trackingId = `pv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      console.log('Page view tracked:', {
+        trackingId,
+        url: trackingData.url,
+        userId: trackingData.userId,
+        sessionId: trackingData.sessionId
+      });
+
+      return { trackingId };
+    } catch (error) {
+      throw new Error(`Failed to track page view: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Track custom event
+   */
+  async trackCustomEvent(eventData: any): Promise<{ trackingId: string }> {
+    try {
+      // For now, just return a tracking ID
+      // In a real implementation, this would send data to analytics service
+      const trackingId = `ev_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      console.log('Custom event tracked:', {
+        trackingId,
+        eventName: eventData.eventName,
+        eventCategory: eventData.eventCategory,
+        userId: eventData.userId,
+        sessionId: eventData.sessionId
+      });
+
+      return { trackingId };
+    } catch (error) {
+      throw new Error(`Failed to track custom event: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get top pages analytics data
+   */
+  async getTopPages(userId: string, options: {
+    startDate: Date;
+    endDate: Date;
+    limit: number;
+  }): Promise<Array<{ page: string; views: number; conversions: number }>> {
+    try {
+      // Mock implementation for now
+      // In a real implementation, this would query analytics data
+      const mockTopPages = [
+        { page: '/home', views: 1250, conversions: 45 },
+        { page: '/about', views: 890, conversions: 23 },
+        { page: '/services', views: 675, conversions: 34 },
+        { page: '/contact', views: 456, conversions: 12 },
+        { page: '/blog', views: 234, conversions: 8 }
+      ];
+
+      return mockTopPages.slice(0, options.limit);
+    } catch (error) {
+      console.error('Error fetching top pages:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get traffic sources analytics data
+   */
+  async getTrafficSources(userId: string, options: {
+    startDate: Date;
+    endDate: Date;
+    limit: number;
+  }): Promise<Array<{ source: string; sessions: number; conversions: number }>> {
+    try {
+      // Mock implementation for now
+      // In a real implementation, this would query analytics data
+      const mockTrafficSources = [
+        { source: 'google', sessions: 2340, conversions: 89 },
+        { source: 'direct', sessions: 1890, conversions: 67 },
+        { source: 'facebook', sessions: 1234, conversions: 45 },
+        { source: 'linkedin', sessions: 876, conversions: 34 },
+        { source: 'twitter', sessions: 543, conversions: 23 },
+        { source: 'email', sessions: 432, conversions: 19 }
+      ];
+
+      return mockTrafficSources.slice(0, options.limit);
+    } catch (error) {
+      console.error('Error fetching traffic sources:', error);
+      return [];
+    }
+  }
 }

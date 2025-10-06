@@ -26,6 +26,19 @@ interface ProposalGenerationParams {
     bio?: string;
     skills?: string[];
   };
+  tone?: 'professional' | 'friendly' | 'confident' | 'casual';
+  length?: 'short' | 'medium' | 'long';
+  custom_instructions?: string;
+  job?: {
+    id?: string;
+    title?: string;
+    description?: string;
+    company?: string;
+    location?: string;
+    salary_range?: string;
+    requirements?: string[];
+    skills?: string[];
+  };
 }
 
 interface GeneratedProposal {
@@ -305,6 +318,54 @@ Best regards`;
     
     return proposals;
   }
+
+  // Generate text using OpenAI
+  async generateText(prompt: string): Promise<string> {
+    try {
+      // If OpenAI is not configured, return mock response
+      if (!this.isConfigured || !this.openai) {
+        return this.getMockTextResponse(prompt);
+      }
+
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that generates professional content based on user prompts.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 1000,
+        temperature: 0.7
+      });
+
+      return completion.choices[0]?.message?.content || '';
+    } catch (error) {
+      console.error('Error generating text with OpenAI:', error);
+      
+      // Fallback to mock response if API fails
+      console.log('Falling back to mock text response due to API error');
+      return this.getMockTextResponse(prompt);
+    }
+  }
+
+  private getMockTextResponse(prompt: string): string {
+    // Generate a mock response based on the prompt content
+    if (prompt.toLowerCase().includes('job posting') || prompt.toLowerCase().includes('optimize')) {
+      return JSON.stringify({
+        optimized_title: "Senior Software Engineer - Full Stack Development",
+        optimized_description: "Join our dynamic team as a Senior Software Engineer where you'll lead the development of cutting-edge web applications. You'll work with modern technologies, mentor junior developers, and contribute to architectural decisions that shape our product's future. We offer competitive compensation, flexible work arrangements, and excellent growth opportunities in a collaborative environment.",
+        suggested_skills: ["JavaScript", "React", "Node.js", "TypeScript", "AWS", "Docker", "Git"],
+        recommended_benefits: ["Health insurance", "401(k) matching", "Flexible PTO", "Remote work options", "Professional development budget", "Stock options"]
+      });
+    }
+    
+    return "This is a mock response. OpenAI API is not configured or temporarily unavailable.";
+  }
 }
 
 let openaiServiceInstance: OpenAIService | null = null;
@@ -316,11 +377,20 @@ export const getOpenAIService = (): OpenAIService => {
   return openaiServiceInstance;
 };
 
+// Type definition for the proxy object
+interface OpenAIServiceProxy {
+  generateProposal: (params: ProposalGenerationParams) => Promise<GeneratedProposal>;
+  testConnection: () => Promise<boolean>;
+  generateProposalVariations: (params: ProposalGenerationParams, count?: number) => Promise<GeneratedProposal[]>;
+  generateText: (prompt: string) => Promise<string>;
+}
+
 // Export a proxy object that lazily initializes the service
-export const openaiService = {
+export const openaiService: OpenAIServiceProxy = {
   generateProposal: (params: ProposalGenerationParams) => getOpenAIService().generateProposal(params),
   testConnection: () => getOpenAIService().testConnection(),
-  generateProposalVariations: (params: ProposalGenerationParams, count?: number) => getOpenAIService().generateProposalVariations(params, count)
+  generateProposalVariations: (params: ProposalGenerationParams, count?: number) => getOpenAIService().generateProposalVariations(params, count),
+  generateText: (prompt: string) => getOpenAIService().generateText(prompt)
 };
 
 export default openaiService;

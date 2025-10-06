@@ -9,7 +9,6 @@ import ResumeAnalyzer from "@/pages/ResumeAnalyzer";
 import Templates from "@/pages/Templates";
 import CoverLetter from "@/pages/CoverLetter";
 import UpworkProposal from "@/pages/UpworkProposal";
-import CoverLetterGenerator from '@/pages/CoverLetterGenerator';
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import VerifyEmail from "@/pages/VerifyEmail";

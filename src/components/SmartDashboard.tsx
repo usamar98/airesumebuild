@@ -288,7 +288,8 @@ const SmartDashboard: React.FC = () => {
               </div>
             </>
           )}
-          {userRole === 'employer' && (
+          {/* COMMENTED OUT FOR CORE FEATURES FOCUS */}
+          {/* {userRole === 'employer' && (
             <>
               <div className="flex items-center space-x-3">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -301,7 +302,7 @@ const SmartDashboard: React.FC = () => {
                 <span className="text-xs text-gray-400">3 hours ago</span>
               </div>
             </>
-          )}
+          )} */}
         </div>
       </div>
     </div>
@@ -451,8 +452,9 @@ const SmartDashboard: React.FC = () => {
           </h1>
           <p className="mt-2 text-gray-600">
             {userRole === 'job_seeker' && 'Track your job applications and discover new opportunities.'}
-            {userRole === 'employer' && 'Manage your job postings and find the perfect candidates.'}
-            {userRole === 'dual' && 'Manage both your job search and recruitment activities.'}
+            {/* COMMENTED OUT FOR CORE FEATURES FOCUS */}
+            {/* {userRole === 'employer' && 'Manage your job postings and find the perfect candidates.'} */}
+            {/* {userRole === 'dual' && 'Manage both your job search and recruitment activities.'} */}
           </p>
         </div>
 

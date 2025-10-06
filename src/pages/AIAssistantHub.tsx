@@ -147,8 +147,15 @@ const AIAssistantHub: React.FC = () => {
     }
   ];
 
-  // Filter tools based on user role
+  // Filter tools based on user role - SIMPLIFIED FOR CORE FEATURES
   const getFilteredTools = () => {
+    // Show all core tools regardless of role
+    return aiTools.filter(tool => 
+      tool.category === 'job_seeking' || 
+      tool.category === 'general'
+    );
+    
+    /* COMMENTED OUT FOR CORE FEATURES FOCUS
     if (userRole === 'job_seeker') {
       return aiTools.filter(tool => 
         tool.category === 'job_seeking' || 
@@ -163,6 +170,7 @@ const AIAssistantHub: React.FC = () => {
       // For dual role or undefined, show all tools
       return aiTools;
     }
+    */
   };
 
   const filteredTools = getFilteredTools();
@@ -417,6 +425,18 @@ const AIAssistantHub: React.FC = () => {
 
   // Get role-specific content
   const getRoleSpecificContent = () => {
+    // SIMPLIFIED FOR CORE FEATURES - Always show job seeker focused tools
+    return {
+      title: 'AI Career Assistant',
+      description: 'Accelerate your job search with AI-powered career tools',
+      categories: [
+        { id: 'all', label: 'All Tools', icon: <Sparkles className="h-4 w-4" /> },
+        { id: 'job_seeking', label: 'Job Search', icon: <User className="h-4 w-4" /> },
+        { id: 'general', label: 'Career Tools', icon: <Bot className="h-4 w-4" /> }
+      ]
+    };
+    
+    /* COMMENTED OUT FOR CORE FEATURES FOCUS
     if (userRole === 'job_seeker') {
       return {
         title: 'AI Career Assistant',
@@ -449,6 +469,7 @@ const AIAssistantHub: React.FC = () => {
         ]
       };
     }
+    */
   };
 
   const roleContent = getRoleSpecificContent();

@@ -97,7 +97,7 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
   const getNavigationSections = () => {
     const sections = [];
 
-    // Jobs Hub - Always visible but content varies by role
+    // Jobs Hub - Coming Soon Features
     const jobsHubItems = [
       { 
         label: 'Browse Jobs', 
@@ -139,7 +139,7 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
       subItems: jobsHubItems
     });
 
-    // My Dashboard - Role-based content
+    // My Dashboard - Coming Soon Features
     if (user) {
       sections.push({
         id: 'dashboard',
@@ -187,31 +187,15 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
       });
     }
 
-    // AI Assistant - Role-specific tools
+    // AI Assistant - Core features only (no role-based restrictions)
     const getAIAssistantItems = () => {
-      if (userRole === 'job_seeker') {
-        return [
-          { label: 'Resume Builder', path: '/builder', visible: true },
-          { label: 'Resume Analyzer', path: '/analyzer', visible: true },
-          { label: 'Upwork Proposal', path: '/upwork-proposal', visible: true },
-          { label: 'AI Chat', path: '/ai-assistant', visible: canAccessFeature('canAccessAITools') },
-          { label: 'Templates', path: '/templates', visible: true }
-        ];
-      } else if (userRole === 'employer') {
-        return [
-          { label: 'AI Chat', path: '/ai-assistant', visible: canAccessFeature('canAccessAITools') },
-          { label: 'Templates', path: '/templates', visible: true }
-        ];
-      } else {
-        // For dual role or undefined, show all tools
-        return [
-          { label: 'Resume Builder', path: '/builder', visible: true },
-          { label: 'Resume Analyzer', path: '/analyzer', visible: true },
-          { label: 'Upwork Proposal', path: '/upwork-proposal', visible: true },
-          { label: 'AI Chat', path: '/ai-assistant', visible: canAccessFeature('canAccessAITools') },
-          { label: 'Templates', path: '/templates', visible: true }
-        ];
-      }
+      return [
+        { label: 'Resume Builder', path: '/builder', visible: true },
+        { label: 'Resume Analyzer', path: '/analyzer', visible: true },
+        { label: 'Upwork Proposal', path: '/upwork-proposal', visible: true },
+        { label: 'AI Chat', path: '/ai-assistant', visible: true },
+        { label: 'Templates', path: '/templates', visible: true }
+      ];
     };
 
     sections.push({

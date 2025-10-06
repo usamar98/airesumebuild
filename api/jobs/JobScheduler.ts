@@ -41,7 +41,6 @@ interface JobResult {
 
 export class JobScheduler {
   private supabase: any;
-  private platformFactory: PlatformServiceFactory;
   private dataAggregator: DataAggregator;
   private jobs: Map<string, JobConfig> = new Map();
   private runningJobs: Map<string, NodeJS.Timeout> = new Map();
@@ -53,8 +52,12 @@ export class JobScheduler {
       process.env.SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-    this.platformFactory = new PlatformServiceFactory();
-    this.dataAggregator = new DataAggregator();
+    this.dataAggregator = new DataAggregator({
+      batchSize: 1000,
+      maxRetries: 3,
+      retryDelayMs: 5000,
+      enableRealTimeUpdates: true
+    });
   }
 
   /**
@@ -336,17 +339,23 @@ export class JobScheduler {
   /**
    * Sync data from a specific platform
    */
-  private async syncPlatformData(platformType: string, platformName: string): Promise<any> {
+  private async syncPlatformData(platformType: string, platformName: string, userId?: string): Promise<any> {
     const service = PlatformServiceFactory.getService(platformType, platformName);
     if (!service) {
       throw new Error(`Platform service not found: ${platformType}/${platformName}`);
     }
 
-    // Fetch analytics data
-    const analytics = await service.fetchAnalytics();
+    // Fetch analytics data - provide userId and optional date range
+    const analytics = await service.fetchAnalytics(userId || 'system', {
+      start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      end: new Date().toISOString()
+    });
     
     // Process and save the data using the correct method
-    const processedData = await this.dataAggregator.aggregateAllData();
+    const processedData = await this.dataAggregator.aggregateAllData({
+      start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      end: new Date().toISOString()
+    });
     
     return {
       platform_type: platformType,

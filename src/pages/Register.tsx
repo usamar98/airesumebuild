@@ -312,97 +312,59 @@ const Register: React.FC = () => {
                 </label>
 
                 {/* Employer Option */}
-                <label className={`relative flex items-center p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${
-                  formData.userRole === 'employer' 
-                    ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg shadow-blue-500/20' 
-                    : 'border-gray-200 hover:border-gray-300 bg-white/50'
-                } ${!isFeatureEnabled('employerRegistration') ? 'opacity-60' : ''}`}>
+                <label className={`relative flex items-center p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.02] opacity-60 border-gray-200 bg-white/50`}>
                   <input
                     type="radio"
                     name="userRole"
                     value="employer"
-                    checked={formData.userRole === 'employer'}
-                    onChange={handleInputChange}
+                    checked={false}
+                    onChange={() => {}}
                     className="sr-only"
-                    disabled={!isFeatureEnabled('employerRegistration')}
+                    disabled={true}
                   />
                   <div className="flex items-center space-x-4 flex-1">
-                    <div className={`p-3 rounded-xl transition-all duration-300 ${
-                      formData.userRole === 'employer' 
-                        ? 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg' 
-                        : 'bg-gray-100'
-                    }`}>
-                      <Building2 className={`h-6 w-6 ${
-                        formData.userRole === 'employer' ? 'text-white' : 'text-gray-600'
-                      }`} />
+                    <div className="p-3 rounded-xl transition-all duration-300 bg-gray-100">
+                      <Building2 className="h-6 w-6 text-gray-600" />
                     </div>
                     <div className="flex-1">
                       <div className="font-semibold text-gray-900 text-lg">Employer</div>
                       <div className="text-sm text-gray-600">Hiring talent for my company</div>
                     </div>
                   </div>
-                  {formData.userRole === 'employer' && (
-                    <div className="absolute top-3 right-3">
-                      <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                        <CheckCircle className="h-4 w-4 text-white" />
-                      </div>
+                  <div className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                    <div className="text-center px-4">
+                      <h3 className="font-semibold text-gray-700 text-sm mb-1">Coming Soon</h3>
+                      <p className="text-gray-500 text-xs">Employer features are under development</p>
                     </div>
-                  )}
-                  {!isFeatureEnabled('employerRegistration') && (
-                    <div className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                      <div className="text-center px-4">
-                        <h3 className="font-semibold text-gray-700 text-sm mb-1">Coming Soon</h3>
-                        <p className="text-gray-500 text-xs">Employer features are under development</p>
-                      </div>
-                    </div>
-                  )}
+                  </div>
                 </label>
 
                 {/* Both Option */}
-                <label className={`relative flex items-center p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${
-                  formData.userRole === 'dual' 
-                    ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg shadow-blue-500/20' 
-                    : 'border-gray-200 hover:border-gray-300 bg-white/50'
-                } ${!isFeatureEnabled('employerRegistration') ? 'opacity-60' : ''}`}>
+                <label className={`relative flex items-center p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.02] opacity-60 border-gray-200 bg-white/50`}>
                   <input
                     type="radio"
                     name="userRole"
-                    value="dual"
-                    checked={formData.userRole === 'dual'}
-                    onChange={handleInputChange}
+                    value="both"
+                    checked={false}
+                    onChange={() => {}}
                     className="sr-only"
-                    disabled={!isFeatureEnabled('employerRegistration')}
+                    disabled={true}
                   />
                   <div className="flex items-center space-x-4 flex-1">
-                    <div className={`p-3 rounded-xl transition-all duration-300 ${
-                      formData.userRole === 'dual' 
-                        ? 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg' 
-                        : 'bg-gray-100'
-                    }`}>
-                      <Users className={`h-6 w-6 ${
-                        formData.userRole === 'dual' ? 'text-white' : 'text-gray-600'
-                      }`} />
+                    <div className="p-3 rounded-xl transition-all duration-300 bg-gray-100">
+                      <Users className="h-6 w-6 text-gray-600" />
                     </div>
                     <div className="flex-1">
                       <div className="font-semibold text-gray-900 text-lg">Both</div>
-                      <div className="text-sm text-gray-600">I'm both looking for jobs and hiring</div>
+                      <div className="text-sm text-gray-600">Looking for work & hiring talent</div>
                     </div>
                   </div>
-                  {formData.userRole === 'dual' && (
-                    <div className="absolute top-3 right-3">
-                      <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                        <CheckCircle className="h-4 w-4 text-white" />
-                      </div>
+                  <div className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                    <div className="text-center px-4">
+                      <h3 className="font-semibold text-gray-700 text-sm mb-1">Coming Soon</h3>
+                      <p className="text-gray-500 text-xs">Dual role features are under development</p>
                     </div>
-                  )}
-                  {!isFeatureEnabled('employerRegistration') && (
-                    <div className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                      <div className="text-center px-4">
-                        <h3 className="font-semibold text-gray-700 text-sm mb-1">Coming Soon</h3>
-                        <p className="text-gray-500 text-xs">Dual role features are under development</p>
-                      </div>
-                    </div>
-                  )}
+                  </div>
                 </label>
               </div>
             </div>

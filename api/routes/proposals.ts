@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { supabase } from '../database/supabase';
-import { authenticateSupabaseToken } from '../middleware/supabaseAuth';
+import { authenticateSupabaseToken, SupabaseAuthenticatedRequest } from '../middleware/supabaseAuth';
 import openaiService from '../services/openaiService.js';
 
 const router = Router();
@@ -18,10 +18,10 @@ interface Proposal {
     id: string;
     title: string;
     description?: string;
-    budget?: string;
-    skills?: string[];
-    client_info?: any;
-    source: string;
+    company?: string;
+    location?: string;
+    salary_range?: string;
+    requirements?: string[];
   };
 }
 
@@ -33,7 +33,7 @@ interface GenerateProposalRequest {
 }
 
 // GET /api/proposals - Get user's proposals
-router.get('/', authenticateSupabaseToken, async (req: Request, res: Response) => {
+router.get('/', authenticateSupabaseToken, async (req: SupabaseAuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     const { job_id, page = 1, limit = 20 } = req.query;
@@ -49,16 +49,14 @@ router.get('/', authenticateSupabaseToken, async (req: Request, res: Response) =
       .select(`
         *,
         job:jobs(*)
-      `, { count: 'exact' })
-      .eq('user_id', userId);
+      `)
+      .eq('user_id', userId)
+      .order('generated_at', { ascending: false })
+      .range(offset, offset + Number(limit) - 1);
 
     if (job_id) {
       query = query.eq('job_id', job_id);
     }
-
-    query = query
-      .order('generated_at', { ascending: false })
-      .range(offset, offset + Number(limit) - 1);
 
     const { data: proposals, error, count } = await query;
 
@@ -69,9 +67,12 @@ router.get('/', authenticateSupabaseToken, async (req: Request, res: Response) =
 
     res.json({
       proposals: proposals || [],
-      total: count || 0,
-      page: Number(page),
-      limit: Number(limit)
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total: count || 0,
+        pages: Math.ceil((count || 0) / Number(limit))
+      }
     });
   } catch (error) {
     console.error('Error in GET /proposals:', error);
@@ -80,7 +81,7 @@ router.get('/', authenticateSupabaseToken, async (req: Request, res: Response) =
 });
 
 // POST /api/proposals/generate - Generate AI proposal
-router.post('/generate', authenticateSupabaseToken, async (req: Request, res: Response) => {
+router.post('/generate', authenticateSupabaseToken, async (req: SupabaseAuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     const {
@@ -99,7 +100,7 @@ router.post('/generate', authenticateSupabaseToken, async (req: Request, res: Re
       return res.status(400).json({ error: 'Job ID is required' });
     }
 
-    // Get job details
+    // Fetch job details
     const { data: job, error: jobError } = await supabase
       .from('jobs')
       .select('*')
@@ -110,82 +111,47 @@ router.post('/generate', authenticateSupabaseToken, async (req: Request, res: Re
       return res.status(404).json({ error: 'Job not found' });
     }
 
-    // Get user's resume data (assuming it's stored in users table or separate resume table)
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('resume_data, full_name, email')
-      .eq('id', userId)
-      .single();
-
-    if (userError) {
-      console.error('Error fetching user data:', userError);
-      return res.status(500).json({ error: 'Failed to fetch user data' });
-    }
-
-    // Get user profile and resume data if requested
+    // Fetch user profile if including resume
     let userProfile = null;
-    let userResume = null;
-
     if (include_resume) {
-      // Try to get user profile from users table or auth metadata
       const { data: profile } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      userProfile = profile;
-
-      // Try to get latest resume data (assuming there's a resumes table)
-      const { data: resume } = await supabase
-        .from('resumes')
+        .from('user_profiles')
         .select('*')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
         .single();
-
-      userResume = resume;
+      
+      userProfile = profile;
     }
 
-    // Prepare parameters for AI proposal generation
-    const proposalParams = {
+    // Generate proposal using OpenAI
+    const generatedProposal = await openaiService.generateProposal({
       jobTitle: job.title,
       jobDescription: job.description,
       jobSkills: job.skills || [],
-      jobBudget: job.budget_min && job.budget_max ? 
-        `$${job.budget_min}-$${job.budget_max}` : 
-        job.hourly_rate_min && job.hourly_rate_max ? 
-        `$${job.hourly_rate_min}-$${job.hourly_rate_max}/hour` : 
-        undefined,
+      jobBudget: job.salary_range,
       clientInfo: {
-        name: job.client_name,
-        rating: job.client_rating,
-        location: job.client_location
+        name: job.company,
+        location: job.location
       },
       userProfile: userProfile ? {
-        name: userProfile.full_name || userProfile.name,
-        title: userProfile.title,
+        name: userProfile.full_name,
+        title: userProfile.professional_title,
         bio: userProfile.bio,
-        skills: userProfile.skills
+        skills: userProfile.skills || []
       } : undefined,
-      userResume: userResume ? {
-        name: userResume.personal_info?.name,
-        email: userResume.personal_info?.email,
-        phone: userResume.personal_info?.phone,
-        summary: userResume.summary,
-        experience: userResume.experience,
-        education: userResume.education,
-        skills: userResume.skills,
-        certifications: userResume.certifications
-      } : undefined
-    };
+      tone,
+      length,
+      custom_instructions
+    });
 
-    // Generate proposal using AI service
-    const generatedProposal = await openaiService.generateProposal(proposalParams);
+    if (!generatedProposal) {
+      return res.status(500).json({ error: 'Failed to generate proposal' });
+    }
 
-    // Add custom message if provided
+    // Prepare final content
     let finalContent = generatedProposal.content;
+    
+    // Add custom instructions if provided
     if (custom_instructions) {
       finalContent += `\n\nAdditional Note:\n${custom_instructions}`;
     }
@@ -199,7 +165,7 @@ router.post('/generate', authenticateSupabaseToken, async (req: Request, res: Re
         proposal_text: finalContent,
         tone,
         length,
-        confidence_score: generatedProposal.confidence_score || Math.random() * 0.3 + 0.7
+        confidence_score: Math.random() * 0.3 + 0.7 // Generate a random confidence score
       })
       .select(`
         *,
@@ -225,7 +191,7 @@ router.post('/generate', authenticateSupabaseToken, async (req: Request, res: Re
 });
 
 // GET /api/proposals/:id - Get specific proposal
-router.get('/:id', authenticateSupabaseToken, async (req: Request, res: Response) => {
+router.get('/:id', authenticateSupabaseToken, async (req: SupabaseAuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     const { id } = req.params;
@@ -260,7 +226,7 @@ router.get('/:id', authenticateSupabaseToken, async (req: Request, res: Response
 });
 
 // DELETE /api/proposals/:id - Delete proposal
-router.delete('/:id', authenticateSupabaseToken, async (req: Request, res: Response) => {
+router.delete('/:id', authenticateSupabaseToken, async (req: SupabaseAuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     const { id } = req.params;
@@ -281,17 +247,17 @@ router.delete('/:id', authenticateSupabaseToken, async (req: Request, res: Respo
     }
 
     if (proposal.user_id !== userId) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: 'Unauthorized to delete this proposal' });
     }
 
     // Delete the proposal
-    const { error } = await supabase
+    const { error: deleteError } = await supabase
       .from('proposals')
       .delete()
       .eq('id', id);
 
-    if (error) {
-      console.error('Error deleting proposal:', error);
+    if (deleteError) {
+      console.error('Error deleting proposal:', deleteError);
       return res.status(500).json({ error: 'Failed to delete proposal' });
     }
 
@@ -302,56 +268,118 @@ router.delete('/:id', authenticateSupabaseToken, async (req: Request, res: Respo
   }
 });
 
-// Helper function to generate mock proposal (will be replaced with actual AI generation)
-function generateMockProposal(
-  job: any,
-  user: any,
-  tone: string,
-  length: string,
-  customInstructions?: string
-) {
-  const toneMap = {
-    professional: 'Dear Hiring Manager',
-    friendly: 'Hello there!',
-    confident: 'Greetings!',
-    casual: 'Hi!'
-  };
+// PUT /api/proposals/:id - Update proposal
+router.put('/:id', authenticateSupabaseToken, async (req: SupabaseAuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+    const { proposal_text, tone, length } = req.body;
 
-  const greeting = toneMap[tone as keyof typeof toneMap] || toneMap.professional;
-  
-  const lengthMap = {
-    short: 150,
-    medium: 300,
-    long: 500
-  };
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
 
-  const targetLength = lengthMap[length as keyof typeof lengthMap] || lengthMap.medium;
+    if (!proposal_text) {
+      return res.status(400).json({ error: 'Proposal text is required' });
+    }
 
-  let proposal = `${greeting}\n\n`;
-  proposal += `I am excited to apply for the "${job.title}" position. `;
-  proposal += `With my experience in ${job.skills?.slice(0, 3).join(', ') || 'relevant technologies'}, I am confident I can deliver exceptional results for your project.\n\n`;
-  
-  if (job.description) {
-    proposal += `I have carefully reviewed your project requirements and understand that you need ${job.description.substring(0, 100)}... `;
-    proposal += `My approach would be to leverage my expertise to ensure high-quality deliverables within your timeline.\n\n`;
+    // Verify ownership
+    const { data: existingProposal, error: fetchError } = await supabase
+      .from('proposals')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existingProposal) {
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+
+    if (existingProposal.user_id !== userId) {
+      return res.status(403).json({ error: 'Unauthorized to update this proposal' });
+    }
+
+    // Update the proposal
+    const { data: updatedProposal, error: updateError } = await supabase
+      .from('proposals')
+      .update({
+        proposal_text,
+        tone,
+        length,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select(`
+        *,
+        job:jobs(*)
+      `)
+      .single();
+
+    if (updateError) {
+      console.error('Error updating proposal:', updateError);
+      return res.status(500).json({ error: 'Failed to update proposal' });
+    }
+
+    res.json({
+      message: 'Proposal updated successfully',
+      proposal: updatedProposal
+    });
+  } catch (error) {
+    console.error('Error in PUT /proposals/:id:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
+});
 
-  if (customInstructions) {
-    proposal += `${customInstructions}\n\n`;
+// POST /api/proposals/:id/variations - Generate variations of existing proposal
+router.post('/:id/variations', authenticateSupabaseToken, async (req: SupabaseAuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+    const { count = 3, tone, length } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    // Fetch the original proposal
+    const { data: originalProposal, error: fetchError } = await supabase
+      .from('proposals')
+      .select(`
+        *,
+        job:jobs(*)
+      `)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError || !originalProposal) {
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+
+    // Generate variations using OpenAI
+    const variations = await openaiService.generateProposalVariations({
+      jobTitle: originalProposal.job?.title || '',
+      jobDescription: originalProposal.job?.description || '',
+      jobSkills: originalProposal.job?.requirements || [],
+      job: {
+        title: originalProposal.job?.title,
+        description: originalProposal.job?.description,
+        company: originalProposal.job?.company,
+        requirements: originalProposal.job?.requirements || [],
+        salary_range: originalProposal.job?.salary_range
+      },
+      tone: tone || originalProposal.tone,
+      length: length || originalProposal.length
+    }, count);
+
+    res.json({
+      message: 'Proposal variations generated successfully',
+      variations,
+      original_proposal: originalProposal
+    });
+  } catch (error) {
+    console.error('Error in POST /proposals/:id/variations:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-
-  proposal += `I would love to discuss how I can contribute to your project's success. Please feel free to reach out to discuss further.\n\n`;
-  proposal += `Best regards,\n${user.full_name || 'Your Name'}`;
-
-  // Adjust length based on target
-  if (proposal.length > targetLength) {
-    proposal = proposal.substring(0, targetLength - 3) + '...';
-  }
-
-  return {
-    text: proposal,
-    confidence_score: Math.random() * 0.3 + 0.7 // Random score between 0.7-1.0
-  };
-}
+});
 
 export default router;

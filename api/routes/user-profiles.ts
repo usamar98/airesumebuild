@@ -53,7 +53,7 @@ router.get('/me', authenticateSupabaseToken, async (req: SupabaseAuthenticatedRe
           .from('user_profiles')
           .insert({
             user_id: req.user.id,
-            full_name: req.user.user_metadata?.name || req.user.email?.split('@')[0] || 'User'
+            full_name: req.user.name || req.user.email?.split('@')[0] || 'User'
           })
           .select()
           .single();

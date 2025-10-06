@@ -54,7 +54,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           setError(result.error || 'Login failed');
         }
       } else {
-        const result = await register(formData.name, formData.email, formData.password);
+        const result = await register(formData.name, formData.email, formData.password, 'user');
         if (result.success) {
           setSuccessMessage(result.message || 'Registration successful!');
           if (result.message?.includes('verify your email')) {

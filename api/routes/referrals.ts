@@ -45,11 +45,7 @@ router.get('/',
 
       const { status, limit = 20, offset = 0 } = req.query;
 
-      const referrals = await referralsService.getUserReferrals(userId, {
-        status: status as 'pending' | 'completed' | 'expired' | undefined,
-        limit: parseInt(limit as string),
-        offset: parseInt(offset as string)
-      });
+      const referrals = await referralsService.getUserReferrals(userId, status as string);
 
       res.json({ referrals });
     } catch (error: any) {
@@ -89,10 +85,10 @@ router.post('/',
       const { referred_email, job_id, campaign_name, metadata } = req.body;
 
       const referral = await referralsService.createReferral(userId, {
-        referredEmail: referred_email,
-        jobId: job_id,
-        campaignName: campaign_name,
-        metadata
+        referrer_user_id: userId,
+        referral_source: campaign_name || 'manual',
+        job_posting_id: job_id,
+        metadata: { ...metadata, referred_email }
       });
 
       res.status(201).json({
@@ -139,17 +135,30 @@ router.post('/generate-url',
 
       const { base_url, job_id, campaign_name, custom_params } = req.body;
 
-      const referralUrl = await referralsService.generateReferralUrl(userId, {
-        baseUrl: base_url,
-        jobId: job_id,
-        campaignName: campaign_name,
-        customParams: custom_params
+      // First create a referral to get the referral code
+      const referralResult = await referralsService.createReferral(userId, {
+        referrer_user_id: userId,
+        referral_source: campaign_name || 'url_generation',
+        job_posting_id: job_id,
+        metadata: custom_params || {}
       });
 
+      if (!referralResult.success || !referralResult.data) {
+        res.status(500).json({ error: 'Failed to create referral' });
+        return;
+      }
+
+      // Generate the URL using the referral code
+      const referralUrl = referralsService.generateReferralUrl(
+        base_url,
+        referralResult.data.referral_code,
+        job_id
+      );
+
       res.json({
-        referral_url: referralUrl.url,
-        referral_code: referralUrl.code,
-        expires_at: referralUrl.expiresAt
+        referral_url: referralUrl,
+        referral_code: referralResult.data.referral_code,
+        expires_at: referralResult.data.expires_at
       });
     } catch (error: any) {
       console.error('Error generating referral URL:', error);
@@ -181,21 +190,26 @@ router.post('/track',
 
       const { referral_code, action, user_agent, ip_address, metadata } = req.body;
 
-      const trackingResult = await referralsService.trackReferralAction(referral_code, {
-        action,
-        userAgent: user_agent,
-        ipAddress: ip_address || req.ip,
-        metadata
-      });
-
-      if (!trackingResult.success) {
-        res.status(404).json({ error: trackingResult.error || 'Referral not found' });
+      // Get referral by code to verify it exists
+      const referralResult = await referralsService.getReferralByCode(referral_code);
+      
+      if (!referralResult.success || !referralResult.data) {
+        res.status(404).json({ error: 'Referral not found' });
         return;
       }
 
+      // For now, just log the tracking action (could be enhanced to store in a tracking table)
+      console.log('Referral action tracked:', {
+        referral_code,
+        action,
+        user_agent,
+        ip_address: ip_address || req.ip,
+        metadata
+      });
+
       res.json({
         message: 'Referral action tracked successfully',
-        referral_id: trackingResult.referralId,
+        referral_id: referralResult.data.id,
         action_tracked: action
       });
     } catch (error: any) {
@@ -223,23 +237,29 @@ router.get('/process',
         return;
       }
 
-      const { ref: referralCode, action = 'click' } = req.query;
+      const { ref: referralCode, action = 'click' } = req.query as { ref: string; action?: string };
 
-      const result = await referralsService.processReferralFromUrl(referralCode as string, {
-        action,
-        userAgent: req.get('User-Agent'),
-        ipAddress: req.ip
-      });
-
-      if (!result.success) {
-        res.status(404).json({ error: result.error || 'Invalid referral code' });
+      // For processing referrals from URL, we need a user ID. 
+      // Since this is a public endpoint, we'll just verify the referral exists
+      const referralResult = await referralsService.getReferralByCode(referralCode as string);
+      
+      if (!referralResult.success || !referralResult.data) {
+        res.status(404).json({ error: 'Invalid referral code' });
         return;
       }
 
+      // Log the referral click
+      console.log('Referral processed from URL:', {
+        referral_code: referralCode,
+        action,
+        user_agent: req.get('User-Agent'),
+        ip_address: req.ip
+      });
+
       res.json({
         message: 'Referral processed successfully',
-        referral: result.referral,
-        redirect_url: result.redirectUrl
+        referral: referralResult.data,
+        redirect_url: '/' // Default redirect
       });
     } catch (error: any) {
       console.error('Error processing referral:', error);
@@ -278,10 +298,8 @@ router.get('/analytics',
       const { start_date, end_date, campaign_name, aggregation = 'daily' } = req.query;
 
       const analytics = await referralsService.fetchAnalytics(userId, {
-        startDate: start_date ? new Date(start_date as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        endDate: end_date ? new Date(end_date as string) : new Date(),
-        campaignName: campaign_name as string,
-        aggregation: aggregation as 'daily' | 'weekly' | 'monthly'
+        start: start_date ? new Date(start_date as string).toISOString() : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        end: end_date ? new Date(end_date as string).toISOString() : new Date().toISOString()
       });
 
       res.json({
@@ -313,7 +331,20 @@ router.get('/summary',
         return;
       }
 
-      const summary = await referralsService.getReferralSummary(userId);
+      // Get basic referral summary using existing methods
+      const referrals = await referralsService.getUserReferrals(userId);
+      
+      if (!referrals.success) {
+        res.status(500).json({ error: 'Failed to fetch referral summary' });
+        return;
+      }
+
+      const summary = {
+        total_referrals: referrals.data?.length || 0,
+        pending_referrals: referrals.data?.filter(r => r.status === 'pending').length || 0,
+        approved_referrals: referrals.data?.filter(r => r.status === 'approved').length || 0,
+        rejected_referrals: referrals.data?.filter(r => r.status === 'rejected').length || 0
+      };
 
       res.json({ summary });
     } catch (error: any) {

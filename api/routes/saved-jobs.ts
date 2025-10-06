@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { supabase } from '../database/supabase';
-import { authenticateSupabaseToken } from '../middleware/supabaseAuth';
+import { authenticateSupabaseToken, SupabaseAuthenticatedRequest } from '../middleware/supabaseAuth';
 
 const router = Router();
 
@@ -24,7 +24,7 @@ interface SavedJob {
 }
 
 // GET /api/saved-jobs - Get user's saved jobs
-router.get('/', authenticateSupabaseToken, async (req: Request, res: Response) => {
+router.get('/', authenticateSupabaseToken, async (req: SupabaseAuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     const { status, page = 1, limit = 20 } = req.query;
@@ -71,7 +71,7 @@ router.get('/', authenticateSupabaseToken, async (req: Request, res: Response) =
 });
 
 // POST /api/saved-jobs - Save a job
-router.post('/', authenticateSupabaseToken, async (req: Request, res: Response) => {
+router.post('/', authenticateSupabaseToken, async (req: SupabaseAuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     const { job_id, notes, status = 'saved' } = req.body;
@@ -138,7 +138,7 @@ router.post('/', authenticateSupabaseToken, async (req: Request, res: Response) 
 });
 
 // PUT /api/saved-jobs/:id - Update saved job
-router.put('/:id', authenticateSupabaseToken, async (req: Request, res: Response) => {
+router.put('/:id', authenticateSupabaseToken, async (req: SupabaseAuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     const { id } = req.params;
@@ -194,7 +194,7 @@ router.put('/:id', authenticateSupabaseToken, async (req: Request, res: Response
 });
 
 // DELETE /api/saved-jobs/:id - Remove saved job
-router.delete('/:id', authenticateSupabaseToken, async (req: Request, res: Response) => {
+router.delete('/:id', authenticateSupabaseToken, async (req: SupabaseAuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     const { id } = req.params;
