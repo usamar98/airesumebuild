@@ -34,16 +34,17 @@ import { generateUpworkProposal } from './routes/generate-upwork-proposal.ts'
 import authRoutes from './routes/auth.ts'
 import protectedRoutes from './routes/protected.ts'
 import adminRoutes from './routes/admin.ts'
-import jobsRoutes from './routes/jobs.ts'
-import savedJobsRoutes from './routes/saved-jobs.ts'
-import proposalsRoutes from './routes/proposals.ts'
+// TEMPORARILY DISABLED FOR RAILWAY DEPLOYMENT - Job-related and employer features
+// import jobsRoutes from './routes/jobs.ts'
+// import savedJobsRoutes from './routes/saved-jobs.ts'
+// import proposalsRoutes from './routes/proposals.ts'
 // New job posting platform routes
-import jobPostingsRoutes from './routes/job-postings.ts'
-import applicationsRoutes from './routes/applications.ts'
+// import jobPostingsRoutes from './routes/job-postings.ts'
+// import applicationsRoutes from './routes/applications.ts'
 import userProfilesRoutes from './routes/user-profiles.ts'
 import aiAssistanceRoutes from './routes/ai-assistance.ts'
-import applicantRoutes from './routes/applicant.ts'
-import employerRoutes from './routes/employer.ts'
+// import applicantRoutes from './routes/applicant.ts'
+// import employerRoutes from './routes/employer.ts'
 // Platform Analytics routes
 import platformAnalyticsRoutes from './routes/platform-analytics.ts'
 import referralsRoutes from './routes/referrals.ts'
@@ -158,20 +159,22 @@ app.use('/api/auth', authRoutes)
 app.use('/api/protected', protectedRoutes)
 
 // Admin routes - temporarily disabled during Supabase migration
-// app.use('/api/admin', adminRoutes)
+// Routes
+app.use('/api/admin', adminRoutes)
 
-// Job Management routes (background job scheduler)
-app.use('/api/jobs', jobsRoutes)
-app.use('/api/saved-jobs', savedJobsRoutes)
-app.use('/api/proposals', proposalsRoutes)
+// TEMPORARILY DISABLED FOR RAILWAY DEPLOYMENT - Job-related and employer features
+// Job-related routes
+// app.use('/api/jobs', jobsRoutes)
+// app.use('/api/saved-jobs', savedJobsRoutes)
+// app.use('/api/proposals', proposalsRoutes)
 
 // New job posting platform routes
-app.use('/api/job-postings', jobPostingsRoutes)
-app.use('/api/applications', applicationsRoutes)
+// app.use('/api/job-postings', jobPostingsRoutes)
+// app.use('/api/applications', applicationsRoutes)
 app.use('/api/user-profiles', userProfilesRoutes)
 app.use('/api/ai-assistance', aiAssistanceRoutes)
-app.use('/api/applicant', applicantRoutes)
-app.use('/api/employer', employerRoutes)
+// app.use('/api/applicant', applicantRoutes)
+// app.use('/api/employer', employerRoutes)
 
 // Platform Analytics routes
 app.use('/api/platform-analytics', platformAnalyticsRoutes)

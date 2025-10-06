@@ -56,7 +56,20 @@ export default function PersonalInfoForm({ data, onChange }: PersonalInfoFormPro
         alert(t('personalInfo.failedToImprove') + ': ' + (result.error || t('personalInfo.unknownError')));
       }
     } catch (error) {
-      alert(t('personalInfo.errorImproving') + ': ' + (error instanceof Error ? error.message : t('personalInfo.unknownError')));
+      console.error('Error improving text:', error);
+      let errorMessage = t('personalInfo.unknownError');
+      
+      if (error instanceof Error) {
+        if (error.message.includes('<!DOCTYPE')) {
+          errorMessage = 'API server is not responding. Please make sure both frontend and backend servers are running.';
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'Cannot connect to the API server. Please check if the backend is running on port 3001.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      alert(t('personalInfo.errorImproving') + ': ' + errorMessage);
     } finally {
       setIsImproving(null);
     }

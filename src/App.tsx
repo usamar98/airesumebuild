@@ -14,23 +14,24 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import VerifyEmail from "@/pages/VerifyEmail";
 import AdminDashboard from "@/pages/AdminDashboard";
-import JobDashboard from '@/pages/JobDashboard';
-import JobDetails from '@/pages/JobDetails';
-import SavedJobs from '@/pages/SavedJobs';
-import PostJob from '@/pages/PostJob';
-import JobApplication from '@/pages/JobApplication';
-import EmployerDashboard from '@/pages/EmployerDashboard';
-import ApplicantDashboard from './pages/ApplicantDashboard';
+// TEMPORARILY DISABLED FOR RAILWAY DEPLOYMENT - Job-related imports
+// import JobDashboard from '@/pages/JobDashboard';
+// import JobDetails from '@/pages/JobDetails';
+// import SavedJobs from '@/pages/SavedJobs';
+// import PostJob from '@/pages/PostJob';
+// import JobApplication from '@/pages/JobApplication';
+// import EmployerDashboard from '@/pages/EmployerDashboard';
+// import ApplicantDashboard from './pages/ApplicantDashboard';
 import AIAssistantHub from './pages/AIAssistantHub';
 import ResumeUploader from "@/components/ResumeUploader";
-import JobsHub from "@/components/JobsHub";
+// import JobsHub from "@/components/JobsHub";
 import SmartDashboard from "@/components/SmartDashboard";
-import CompanyProfileDashboard from "@/pages/CompanyProfileDashboard";
-import CompanyAnalyticsDashboard from "@/pages/CompanyAnalyticsDashboard";
-import CompanyJobsDashboard from "@/pages/CompanyJobsDashboard";
-import JobSeekerOverviewDashboard from "@/pages/JobSeekerOverviewDashboard";
-import JobSeekerApplicationsDashboard from "@/pages/JobSeekerApplicationsDashboard";
-import JobSeekerProfileDashboard from "@/pages/JobSeekerProfileDashboard";
+// import CompanyProfileDashboard from "@/pages/CompanyProfileDashboard";
+// import CompanyAnalyticsDashboard from "@/pages/CompanyAnalyticsDashboard";
+// import CompanyJobsDashboard from "@/pages/CompanyJobsDashboard";
+// import JobSeekerOverviewDashboard from "@/pages/JobSeekerOverviewDashboard";
+// import JobSeekerApplicationsDashboard from "@/pages/JobSeekerApplicationsDashboard";
+// import JobSeekerProfileDashboard from "@/pages/JobSeekerProfileDashboard";
 import { createDefaultAdminUser } from "@/utils/adminSetup";
 import { useLanguage } from "@/hooks/useLanguage";
 import "@/i18n";
@@ -79,20 +80,21 @@ export default function App() {
               } 
             />
 
+            {/* TEMPORARILY DISABLED FOR RAILWAY DEPLOYMENT - Job-related features */}
             {/* Jobs Hub - Unified job browsing, posting, and management */}
-            <Route path="/jobs-hub" element={
+            {/* <Route path="/jobs-hub" element={
               <ProtectedRoute>
                 <JobsHub />
               </ProtectedRoute>
-            } />
+            } /> */}
             
             {/* Legacy job routes - redirect to Jobs Hub */}
-            <Route path="/jobs" element={<Navigate to="/jobs-hub?view=browse" replace />} />
+            {/* <Route path="/jobs" element={<Navigate to="/jobs-hub?view=browse" replace />} />
             <Route path="/post-job" element={<Navigate to="/jobs-hub?view=post" replace />} />
-            <Route path="/saved-jobs" element={<Navigate to="/jobs-hub?view=saved" replace />} />
+            <Route path="/saved-jobs" element={<Navigate to="/jobs-hub?view=saved" replace />} /> */}
             
             {/* Job Details and Application - Keep separate for specific functionality */}
-            <Route path="/job-details/:id" element={
+            {/* <Route path="/job-details/:id" element={
               <ProtectedRoute>
                 <JobDetails />
               </ProtectedRoute>
@@ -106,10 +108,11 @@ export default function App() {
               <ProtectedRoute>
                 <JobApplication />
               </ProtectedRoute>
-            } />
+            } /> */}
 
+            {/* TEMPORARILY DISABLED FOR RAILWAY DEPLOYMENT - Job-related dashboard features */}
             {/* Job Seeker Dashboard Routes - Professional Features */}
-            <Route path="/dashboard/overview" element={
+            {/* <Route path="/dashboard/overview" element={
               <ProtectedRoute>
                 <JobSeekerOverviewDashboard />
               </ProtectedRoute>
@@ -123,10 +126,10 @@ export default function App() {
               <ProtectedRoute>
                 <JobSeekerProfileDashboard />
               </ProtectedRoute>
-            } />
+            } /> */}
 
             {/* Company Dashboard Routes - Professional Features */}
-            <Route path="/dashboard/company/profile" element={
+            {/* <Route path="/dashboard/company/profile" element={
               <ProtectedRoute>
                 <CompanyProfileDashboard />
               </ProtectedRoute>
@@ -140,7 +143,7 @@ export default function App() {
               <ProtectedRoute>
                 <CompanyJobsDashboard />
               </ProtectedRoute>
-            } />
+            } /> */}
 
             {/* Smart Dashboard - Role-based dashboard */}
             <Route path="/dashboard" element={
@@ -149,9 +152,10 @@ export default function App() {
               </ProtectedRoute>
             } />
             
+            {/* TEMPORARILY DISABLED FOR RAILWAY DEPLOYMENT - Legacy dashboard routes */}
             {/* Legacy dashboard routes - redirect to Smart Dashboard */}
-            <Route path="/employer-dashboard" element={<Navigate to="/dashboard?view=jobs" replace />} />
-            <Route path="/applicant-dashboard" element={<Navigate to="/dashboard?view=applications" replace />} />
+            {/* <Route path="/employer-dashboard" element={<Navigate to="/dashboard?view=jobs" replace />} />
+            <Route path="/applicant-dashboard" element={<Navigate to="/dashboard?view=applications" replace />} /> */}
 
             {/* AI Assistant Hub - Context-aware AI tools */}
             <Route path="/ai-assistant" element={

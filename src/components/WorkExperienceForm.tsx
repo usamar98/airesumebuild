@@ -167,7 +167,20 @@ export default function WorkExperienceForm({ data, onChange }: WorkExperienceFor
         alert('Failed to improve text: ' + (result.error || 'Unknown error'));
       }
     } catch (error) {
-      alert('Error improving text: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      console.error('Error improving text:', error);
+      let errorMessage = 'Unknown error occurred';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('<!DOCTYPE')) {
+          errorMessage = 'API server is not responding. Please make sure both frontend and backend servers are running.';
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'Cannot connect to the API server. Please check if the backend is running on port 3001.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      alert('Error improving text: ' + errorMessage);
     } finally {
       setIsImproving(null);
     }

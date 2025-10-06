@@ -108,6 +108,19 @@ export default function ProjectsForm({ data, onChange }: ProjectsFormProps) {
       }
     } catch (error) {
       console.error('Error generating project suggestions:', error);
+      let errorMessage = 'Unknown error occurred';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('<!DOCTYPE')) {
+          errorMessage = 'API server is not responding. Please make sure both frontend and backend servers are running.';
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'Cannot connect to the API server. Please check if the backend is running on port 3001.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      alert('Error improving project description: ' + errorMessage);
     } finally {
       setIsGenerating(null);
     }

@@ -108,7 +108,7 @@ const AIAssistantHub: React.FC = () => {
       description: 'Find jobs that match your skills and preferences',
       icon: <Search className="h-6 w-6" />,
       category: 'job_seeking',
-      path: '/jobs'
+      comingSoon: true
     },
     {
       id: 'skill_gap_analysis',
@@ -127,7 +127,7 @@ const AIAssistantHub: React.FC = () => {
       description: 'Get personalized career guidance and advice',
       icon: <Bot className="h-6 w-6" />,
       category: 'general',
-      action: () => getCareerAdvice()
+      comingSoon: true
     },
     {
       id: 'industry_insights',
@@ -135,7 +135,7 @@ const AIAssistantHub: React.FC = () => {
       description: 'Stay updated with industry trends and insights',
       icon: <TrendingUp className="h-6 w-6" />,
       category: 'general',
-      action: () => getIndustryInsights()
+      comingSoon: true
     },
     {
       id: 'networking_assistant',
@@ -143,7 +143,7 @@ const AIAssistantHub: React.FC = () => {
       description: 'Get tips for professional networking and outreach',
       icon: <Users className="h-6 w-6" />,
       category: 'general',
-      action: () => getNetworkingTips()
+      comingSoon: true
     }
   ];
 
