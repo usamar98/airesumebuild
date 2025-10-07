@@ -183,6 +183,7 @@ export const SupabaseAuthProvider: React.FC<AuthProviderProps> = ({ children }) 
   const register = async (name: string, email: string, password: string, role: string): Promise<{ success: boolean; error?: string; message?: string }> => {
     try {
       setIsLoading(true);
+      console.log('🔄 Registration attempt started for:', email);
       
       // Register user with Supabase Auth - the trigger will handle public.users table
       const { data, error } = await supabase.auth.signUp({
@@ -197,34 +198,106 @@ export const SupabaseAuthProvider: React.FC<AuthProviderProps> = ({ children }) 
         }
       });
       
+      console.log('📊 Supabase signUp response:', { 
+        hasUser: !!data.user, 
+        userEmail: data.user?.email,
+        userConfirmed: data.user?.email_confirmed_at,
+        userCreatedAt: data.user?.created_at,
+        hasSession: !!data.session,
+        error: error?.message 
+      });
+      
       if (error) {
-        console.error('Registration error:', error);
+        console.error('❌ Registration error:', error);
         
-        // Check for duplicate email error
-        if (error.message?.includes('already registered') || 
-            error.message?.includes('already exists') ||
-            error.message?.includes('User already registered')) {
+        // Enhanced duplicate email error detection
+        const errorMessage = error.message?.toLowerCase() || '';
+        if (errorMessage.includes('already registered') || 
+            errorMessage.includes('already exists') ||
+            errorMessage.includes('user already registered') ||
+            errorMessage.includes('email already taken') ||
+            errorMessage.includes('duplicate') ||
+            errorMessage.includes('already in use')) {
+          console.log('🚫 Detected duplicate email error');
           return createErrorResponse(error, 'A user with this email already exists. Please try logging in instead.');
+        }
+        
+        // Check for rate limiting
+        if (errorMessage.includes('rate limit') || errorMessage.includes('too many')) {
+          return createErrorResponse(error, 'Too many registration attempts. Please wait a moment and try again.');
+        }
+        
+        // Check for invalid email format
+        if (errorMessage.includes('invalid email') || errorMessage.includes('email format')) {
+          return createErrorResponse(error, 'Please enter a valid email address.');
+        }
+        
+        // Check for weak password
+        if (errorMessage.includes('password') && (errorMessage.includes('weak') || errorMessage.includes('short'))) {
+          return createErrorResponse(error, 'Password must be at least 6 characters long.');
         }
         
         logTechnicalError(error, 'Registration');
         return createErrorResponse(error, 'Registration failed. Please try again.');
       }
       
-      // Check if user was created but already exists (Supabase returns user even for existing emails)
-      if (data.user && data.user.email_confirmed_at) {
-        return createErrorResponse(null, 'A user with this email already exists. Please try logging in instead.');
+      // Enhanced user existence detection
+      if (data.user) {
+        console.log('👤 User data received:', {
+          id: data.user.id,
+          email: data.user.email,
+          emailConfirmed: !!data.user.email_confirmed_at,
+          createdAt: data.user.created_at,
+          lastSignIn: data.user.last_sign_in_at,
+          hasSession: !!data.session
+        });
+        
+        // Check if user already exists and is confirmed
+        if (data.user.email_confirmed_at) {
+          console.log('🚫 User already exists and is confirmed');
+          return createErrorResponse(null, 'A user with this email already exists. Please try logging in instead.');
+        }
+        
+        // Check if user was created just now vs already existed
+        const userCreatedAt = new Date(data.user.created_at);
+        const now = new Date();
+        const timeDiff = now.getTime() - userCreatedAt.getTime();
+        const isNewUser = timeDiff < 5000; // Created within last 5 seconds
+        
+        if (!isNewUser && !data.user.email_confirmed_at) {
+          console.log('🚫 User already exists but not confirmed');
+          return createErrorResponse(null, 'A user with this email already exists but is not verified. Please check your email for the verification link or try logging in.');
+        }
+        
+        // Check if there's a session (indicates existing user)
+        if (data.session && !isNewUser) {
+          console.log('🚫 Session returned for existing user');
+          return createErrorResponse(null, 'A user with this email already exists. Please try logging in instead.');
+        }
+        
+        // New user created successfully
+        if (isNewUser && !data.user.email_confirmed_at) {
+          console.log('✅ New user created successfully, verification required');
+          return createSuccessResponse(
+            'Registration successful! Please check your email to verify your account before logging in.'
+          );
+        }
+        
+        // User created and already confirmed (rare case)
+        if (isNewUser && data.user.email_confirmed_at) {
+          console.log('✅ New user created and already confirmed');
+          return createSuccessResponse(
+            'Registration successful! You can now log in.'
+          );
+        }
       }
       
-      if (data.user && !data.user.email_confirmed_at) {
-        return createSuccessResponse(
-          'Registration successful! Please check your email to verify your account before logging in.'
-        );
-      }
-      return createSuccessResponse(
-        'Registration successful! You can now log in.'
-      );
+      // Fallback case - no user data returned
+      console.log('⚠️ No user data returned from signUp');
+      return createErrorResponse(null, 'Registration failed. Please try again.');
+      
     } catch (error: any) {
+      console.error('💥 Registration exception:', error);
       logTechnicalError(error, 'Registration');
       return createErrorResponse(error, 'Registration failed. Please try again.');
     } finally {
