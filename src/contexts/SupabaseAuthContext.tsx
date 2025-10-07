@@ -185,6 +185,36 @@ export const SupabaseAuthProvider: React.FC<AuthProviderProps> = ({ children }) 
       setIsLoading(true);
       console.log('🔄 Registration attempt started for:', email);
       
+      // Pre-registration check: Verify if user already exists
+      console.log('🔍 Checking if user already exists...');
+      const { data: existingUsers, error: checkError } = await supabase.auth.admin.listUsers();
+      
+      if (checkError) {
+        console.warn('⚠️ Could not check existing users:', checkError.message);
+        // Continue with registration if we can't check (fallback behavior)
+      } else {
+        const existingUser = existingUsers.users.find(user => 
+          user.email?.toLowerCase() === email.toLowerCase()
+        );
+        
+        if (existingUser) {
+          console.log('🚫 User already exists:', {
+            id: existingUser.id,
+            email: existingUser.email,
+            confirmed: !!existingUser.email_confirmed_at,
+            createdAt: existingUser.created_at
+          });
+          
+          if (existingUser.email_confirmed_at) {
+            return createErrorResponse(null, 'A user with this email already exists and is verified. Please try logging in instead.');
+          } else {
+            return createErrorResponse(null, 'A user with this email already exists but is not verified. Please check your email for the verification link or try logging in.');
+          }
+        }
+      }
+      
+      console.log('✅ No existing user found, proceeding with registration');
+      
       // Register user with Supabase Auth - the trigger will handle public.users table
       const { data, error } = await supabase.auth.signUp({
         email,
