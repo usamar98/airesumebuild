@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Registration Validation</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Registration Validation Debug</h1>
+    
+    <div class="test">
+        <h3>Test 1: Role Validation</h3>
+        <p>Testing registration without selecting a role...</p>
+        <button onclick="testRoleValidation()">Test Role Validation</button>
+        <div id="roleResult"></div>
+    </div>
+    
+    <div class="test">
+        <h3>Test 2: Existing User Validation</h3>
+        <p>Testing registration with existing email...</p>
+        <button onclick="testExistingUser()">Test Existing User</button>
+        <div id="existingUserResult"></div>
+    </div>
+
+    <script>
+        async function testRoleValidation() {
+            const resultDiv = document.getElementById('roleResult');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: 'Test User',
+                        email: 'test-role-validation@example.com',
+                        password: 'password123',
+                        userRole: '' // Empty role
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ Backend accepted empty role: ${JSON.stringify(result, null, 2)}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Backend rejected: ${JSON.stringify(result, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testExistingUser() {
+            const resultDiv = document.getElementById('existingUserResult');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // First check if user exists
+                const checkResponse = await fetch('http://localhost:3001/api/check-user-exists', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'testuser123@example.com'
+                    })
+                });
+                
+                const checkResult = await checkResponse.json();
+                
+                if (checkResult.exists) {
+                    resultDiv.innerHTML = `<div class="success">✅ User exists check working: ${checkResult.message}</div>`;
+                    
+                    // Now try to register with existing email
+                    const registerResponse = await fetch('http://localhost:3001/api/auth/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            name: 'Test User',
+                            email: 'testuser123@example.com',
+                            password: 'password123',
+                            userRole: 'job_seeker'
+                        })
+                    });
+                    
+                    const registerResult = await registerResponse.json();
+                    
+                    if (registerResponse.ok) {
+                        resultDiv.innerHTML += `<br><div class="error">❌ Backend allowed duplicate registration: ${JSON.stringify(registerResult, null, 2)}</div>`;
+                    } else {
+                        resultDiv.innerHTML += `<br><div class="success">✅ Backend rejected duplicate: ${JSON.stringify(registerResult, null, 2)}</div>`;
+                    }
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ User doesn't exist in database: ${JSON.stringify(checkResult, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

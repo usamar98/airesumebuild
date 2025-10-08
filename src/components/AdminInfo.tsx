@@ -4,7 +4,7 @@
  */
 import { useState } from 'react';
 import { Eye, EyeOff, Shield, Copy, Check } from 'lucide-react';
-import { getDefaultAdminCredentials } from '@/utils/adminSetup';
+import { getDefaultAdminCredentials } from '../utils/adminSetup';
 
 interface AdminInfoProps {
   className?: string;

@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSupabaseAuth } from '../contexts/SupabaseAuthContext';
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle, Briefcase, Building2, Users, Sparkles } from 'lucide-react';
 import { isFeatureEnabled } from '../config/featureFlags';
+import { createApiUrl } from '../config/api';
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -99,24 +100,70 @@ const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    console.log('🚀 Form submission started');
+    console.log('📋 Form data:', formData);
+    
+    // First, validate the form using the validateForm function
+    const validationError = validateForm();
+    console.log('🔍 Validation result:', validationError);
+    
+    if (validationError) {
+      console.log('❌ Validation failed:', validationError);
+      setError(validationError);
       return;
     }
 
     if (passwordStrength < 3) {
+      console.log('❌ Password strength insufficient:', passwordStrength);
       setError('Please choose a stronger password');
       return;
     }
 
+    console.log('✅ Frontend validation passed');
     setIsSubmitting(true);
     setError('');
     setSuccess('');
 
     try {
+      // Check if user already exists before attempting registration
+      console.log('🔍 Checking if user already exists...');
+      try {
+        const checkUserUrl = '/api/check-user-exists';
+        console.log('🔗 Calling check-user-exists at:', checkUserUrl);
+        const checkResponse = await fetch(checkUserUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: formData.email }),
+        });
+
+        if (checkResponse.ok) {
+          const checkResult = await checkResponse.json();
+          console.log('📊 User existence check result:', checkResult);
+          
+          if (checkResult.exists) {
+            console.log('🚫 User already exists');
+            setError(checkResult.message || 'A user with this email already exists. Please try logging in instead.');
+            setIsSubmitting(false);
+            return;
+          }
+          
+          console.log('✅ No existing user found, proceeding with registration');
+        } else {
+          console.warn('⚠️ Could not check existing users, proceeding with registration');
+        }
+      } catch (checkError) {
+        console.warn('⚠️ Error checking existing users:', checkError);
+        // Continue with registration if backend check fails (fallback behavior)
+      }
+
+      console.log('🔄 Calling register function...');
       const result = await register(formData.name, formData.email, formData.password, formData.userRole);
+      console.log('📊 Registration result:', result);
       
       if (result.success) {
+        console.log('✅ Registration successful');
         setSuccess(result.message || 'Registration successful! Please check your email to verify your account.');
         
         // Clear form
@@ -133,9 +180,11 @@ const Register: React.FC = () => {
           navigate('/login');
         }, 3000);
       } else {
+        console.log('❌ Registration failed:', result.error);
         setError(result.error || 'Registration failed. Please try again.');
       }
     } catch (err: any) {
+      console.error('💥 Unexpected error:', err);
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);

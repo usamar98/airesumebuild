@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PlusIcon, TrashIcon, SparklesIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
-import { Certification } from '@/types';
+import { Certification } from '../types';
 
 interface CertificationsFormProps {
   data: Certification[];

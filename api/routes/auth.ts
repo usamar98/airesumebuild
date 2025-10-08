@@ -44,6 +44,7 @@ export interface CreateUserData {
   email: string;
   password: string;
   name: string;
+  userRole?: 'job_seeker' | 'employer' | 'dual';
   role?: 'user' | 'admin';
 }
 
@@ -203,6 +204,7 @@ const registerValidation = [
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+  body('userRole').isIn(['job_seeker', 'employer', 'dual']).withMessage('Please select your role'),
 ];
 
 const loginValidation = [
@@ -247,7 +249,7 @@ router.post('/register', createRateLimiter(5, 15), registerValidation, async (re
       return;
     }
 
-    const { email, password, name } = req.body as CreateUserData;
+    const { email, password, name, userRole } = req.body as CreateUserData;
     console.log(`[${requestId}] Creating Supabase client...`);
     
     let supabase;
@@ -292,7 +294,7 @@ router.post('/register', createRateLimiter(5, 15), registerValidation, async (re
       password,
       user_metadata: {
         name,
-        role: 'job_seeker'
+        role: userRole || 'job_seeker'
       },
       email_confirm: false // Require email verification
     });
@@ -349,7 +351,7 @@ router.post('/register', createRateLimiter(5, 15), registerValidation, async (re
         id: authData.user.id,
         email: authData.user.email,
         name,
-        role: 'job_seeker'
+        role: userRole || 'job_seeker'
       });
 
     if (profileError) {

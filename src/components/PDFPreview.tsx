@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ResumeData } from '@/types';
+import { ResumeData } from '../types';
 import { DocumentArrowDownIcon, EyeIcon } from '@heroicons/react/24/outline';
-import { generatePDFBlob, TemplateMetadata } from '@/lib/pdfGenerator';
-import { generateAlternativePDF } from '@/lib/jsPdfGenerator';
+import { generatePDFBlob, TemplateMetadata } from '../lib/pdfGenerator';
+import { generateAlternativePDF } from '../lib/jsPdfGenerator';
 import { useSupabaseAuth } from '../contexts/SupabaseAuthContext';
 import AuthModal from './AuthModal';
 

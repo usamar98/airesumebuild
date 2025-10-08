@@ -1,18 +1,18 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
-import { SupabaseAuthProvider } from "@/contexts/SupabaseAuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import Home from "@/pages/Home";
-import ResumeBuilder from "@/pages/ResumeBuilder";
-import ResumeAnalyzer from "@/pages/ResumeAnalyzer";
-import Templates from "@/pages/Templates";
-import CoverLetter from "@/pages/CoverLetter";
-import UpworkProposal from "@/pages/UpworkProposal";
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-import VerifyEmail from "@/pages/VerifyEmail";
-import AdminDashboard from "@/pages/AdminDashboard";
+import { SupabaseAuthProvider } from "./contexts/SupabaseAuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import ErrorBoundary from "./components/ErrorBoundary";
+import Home from "./pages/Home";
+import ResumeBuilder from "./pages/ResumeBuilder";
+import ResumeAnalyzer from "./pages/ResumeAnalyzer";
+import Templates from "./pages/Templates";
+import CoverLetter from "./pages/CoverLetter";
+import UpworkProposal from "./pages/UpworkProposal";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import VerifyEmail from "./pages/VerifyEmail";
+import AdminDashboard from "./pages/AdminDashboard";
 // TEMPORARILY DISABLED FOR RAILWAY DEPLOYMENT - Job-related imports
 // import JobDashboard from '@/pages/JobDashboard';
 // import JobDetails from '@/pages/JobDetails';
@@ -22,18 +22,25 @@ import AdminDashboard from "@/pages/AdminDashboard";
 // import EmployerDashboard from '@/pages/EmployerDashboard';
 // import ApplicantDashboard from './pages/ApplicantDashboard';
 import AIAssistantHub from './pages/AIAssistantHub';
-import ResumeUploader from "@/components/ResumeUploader";
-// import JobsHub from "@/components/JobsHub";
-import SmartDashboard from "@/components/SmartDashboard";
-// import CompanyProfileDashboard from "@/pages/CompanyProfileDashboard";
-// import CompanyAnalyticsDashboard from "@/pages/CompanyAnalyticsDashboard";
-// import CompanyJobsDashboard from "@/pages/CompanyJobsDashboard";
-// import JobSeekerOverviewDashboard from "@/pages/JobSeekerOverviewDashboard";
-// import JobSeekerApplicationsDashboard from "@/pages/JobSeekerApplicationsDashboard";
-// import JobSeekerProfileDashboard from "@/pages/JobSeekerProfileDashboard";
-import { createDefaultAdminUser } from "@/utils/adminSetup";
-import { useLanguage } from "@/hooks/useLanguage";
-import "@/i18n";
+import ResumeUploader from "./components/ResumeUploader";
+// import JobsHub from "./components/JobsHub";
+import SmartDashboard from "./components/SmartDashboard";
+// import CompanyProfileDashboard from "./pages/CompanyProfileDashboard";
+// import CompanyAnalyticsDashboard from "./pages/CompanyAnalyticsDashboard";
+// import CompanyJobsDashboard from "./pages/CompanyJobsDashboard";
+// import JobSeekerOverviewDashboard from "./pages/JobSeekerOverviewDashboard";
+// import JobSeekerApplicationsDashboard from "./pages/JobSeekerApplicationsDashboard";
+// import JobSeekerProfileDashboard from "./pages/JobSeekerProfileDashboard";
+import { createDefaultAdminUser } from "./utils/adminSetup";
+import { useLanguage } from "./hooks/useLanguage";
+import "./i18n";
+
+// Personal Site Generator Pages
+import PersonalSiteUpload from "./pages/PersonalSiteUpload";
+import PersonalSiteGenerate from "./pages/PersonalSiteGenerate";
+import PersonalSiteEdit from "./pages/PersonalSiteEdit";
+import PersonalSitePublish from "./pages/PersonalSitePublish";
+import PersonalSiteDashboard from "./pages/PersonalSiteDashboard";
 
 export default function App() {
   const { currentLanguage } = useLanguage();
@@ -192,6 +199,33 @@ export default function App() {
               </ProtectedRoute>
             } />
             <Route path="/update-resume" element={<ResumeUploader />} />
+            
+            {/* Personal Site Generator Routes */}
+            <Route path="/personal-site-generator/upload" element={
+              <ProtectedRoute>
+                <PersonalSiteUpload />
+              </ProtectedRoute>
+            } />
+            <Route path="/personal-site-generator/generate" element={
+              <ProtectedRoute>
+                <PersonalSiteGenerate />
+              </ProtectedRoute>
+            } />
+            <Route path="/personal-site-generator/edit/:siteId" element={
+              <ProtectedRoute>
+                <PersonalSiteEdit />
+              </ProtectedRoute>
+            } />
+            <Route path="/personal-site-generator/publish/:siteId" element={
+              <ProtectedRoute>
+                <PersonalSitePublish />
+              </ProtectedRoute>
+            } />
+            <Route path="/personal-site-generator/dashboard" element={
+              <ProtectedRoute>
+                <PersonalSiteDashboard />
+              </ProtectedRoute>
+            } />
           </Routes>
         </Router>
       </SupabaseAuthProvider>

@@ -34,6 +34,7 @@ import { generateUpworkProposal } from './routes/generate-upwork-proposal.ts'
 import authRoutes from './routes/auth.ts'
 import protectedRoutes from './routes/protected.ts'
 import adminRoutes from './routes/admin.ts'
+import personalSitesRoutes from './routes/personal-sites.ts'
 // TEMPORARILY DISABLED FOR RAILWAY DEPLOYMENT - Job-related and employer features
 // import jobsRoutes from './routes/jobs.ts'
 // import savedJobsRoutes from './routes/saved-jobs.ts'
@@ -49,6 +50,7 @@ import aiAssistanceRoutes from './routes/ai-assistance.ts'
 import platformAnalyticsRoutes from './routes/platform-analytics.ts'
 import referralsRoutes from './routes/referrals.ts'
 import websiteAnalyticsRoutes from './routes/website-analytics.ts'
+import checkUserExistsRoutes from './routes/check-user-exists.ts'
 import helmet from 'helmet'
 import { createRateLimiter, authenticateSupabaseToken } from './middleware/supabaseAuth.ts'
 
@@ -181,6 +183,11 @@ app.use('/api/platform-analytics', platformAnalyticsRoutes)
 app.use('/api/referrals', referralsRoutes)
 app.use('/api/website-analytics', websiteAnalyticsRoutes)
 
+// Personal Sites routes - MUST be before the catch-all /api route
+app.use('/api/personal-sites', personalSitesRoutes)
+
+app.use('/api', checkUserExistsRoutes)
+
 // Existing API routes
 app.post('/api/improve-text', improveText)
 app.post('/api/analyze-resume', (req, res, next) => {
@@ -203,17 +210,18 @@ app.post('/api/generate-upwork-proposal', authenticateSupabaseToken, generateUpw
 /**
  * Static file serving for production - MUST be after API routes
  */
-if (process.env.NODE_ENV === 'production') {
-  // Serve static files from the dist directory
-  app.use(express.static(path.join(__dirname, '..', 'dist')))
-  
-  // Handle React Router - send all non-API requests to index.html
-  app.get('*', (req: Request, res: Response) => {
-    if (!req.path.startsWith('/api')) {
-      res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'))
-    }
-  })
-}
+// Temporarily disabled for development testing
+// if (process.env.NODE_ENV === 'production') {
+//   // Serve static files from the dist directory
+//   app.use(express.static(path.join(__dirname, '..', 'dist')))
+//   
+//   // Handle React Router - send all non-API requests to index.html
+//   app.get('/*', (req: Request, res: Response) => {
+//     if (!req.path.startsWith('/api')) {
+//       res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'))
+//     }
+//   })
+// }
 
 /**
  * error handler middleware

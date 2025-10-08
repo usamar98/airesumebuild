@@ -5,8 +5,18 @@ const API_BASE_URL = isDevelopment
   ? '' // Empty string for relative URLs in development
   : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001');
 
+// Force absolute URLs for now to work with static build
+const FORCE_ABSOLUTE_URLS = true; // Set to true to force absolute URLs for debugging
+const BACKEND_URL = 'http://localhost:3001';
+
 // Helper function to create API URLs
 export const createApiUrl = (endpoint: string): string => {
+  // Force absolute URLs if flag is set
+  if (FORCE_ABSOLUTE_URLS) {
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+    return `${BACKEND_URL}/${cleanEndpoint}`;
+  }
+  
   // In development, return the endpoint as-is to use Vite proxy
   if (isDevelopment) {
     return endpoint;

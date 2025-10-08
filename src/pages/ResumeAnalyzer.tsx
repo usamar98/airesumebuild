@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeftIcon, DocumentArrowUpIcon, ChartBarIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
-import { AnalysisResult } from '@/types';
-import FileUpload from '@/components/FileUpload';
-import AnalysisResults from '@/components/AnalysisResults';
+import { AnalysisResult } from '../types';
+import FileUpload from '../components/FileUpload';
+import AnalysisResults from '../components/AnalysisResults';
 
 export default function ResumeAnalyzer() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);

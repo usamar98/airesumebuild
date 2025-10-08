@@ -3,8 +3,8 @@
  * Handles user role detection, permissions, and role-based feature access
  */
 import { useState, useEffect, useCallback } from 'react';
-import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
-import { UserRole, RolePermissions, NavigationItem } from '@/types';
+import { useSupabaseAuth } from '../contexts/SupabaseAuthContext';
+import { UserRole, RolePermissions, NavigationItem } from '../types';
 
 interface RoleManagementState {
   userRole: UserRole;

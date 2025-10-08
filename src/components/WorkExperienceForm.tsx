@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { WorkExperience } from '@/types';
+import { WorkExperience } from '../types';
 import { PlusIcon, TrashIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import RichTextEditor from './RichTextEditor';
 

@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import CoverLetterGenerator from '@/components/CoverLetterGenerator';
-import { ResumeData } from '@/types';
+import CoverLetterGenerator from '../components/CoverLetterGenerator';
+import { ResumeData } from '../types';
 
 export default function CoverLetter() {
   const { t } = useTranslation();

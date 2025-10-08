@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { PersonalInfo } from '@/types';
+import { PersonalInfo } from '../types';
 import { SparklesIcon, TrashIcon } from '@heroicons/react/24/outline';
 import RichTextEditor from './RichTextEditor';
 import { useTranslation } from 'react-i18next';

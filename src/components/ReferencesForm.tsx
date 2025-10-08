@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PlusIcon, TrashIcon, UserGroupIcon, EyeSlashIcon, EyeIcon } from '@heroicons/react/24/outline';
-import { Reference } from '@/types';
+import { Reference } from '../types';
 
 interface ReferencesFormProps {
   data: Reference[];

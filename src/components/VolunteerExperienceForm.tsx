@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PlusIcon, TrashIcon, SparklesIcon, HeartIcon } from '@heroicons/react/24/outline';
-import { VolunteerExperience } from '@/types';
+import { VolunteerExperience } from '../types';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 

@@ -1,4 +1,4 @@
-import { AnalysisResult } from '@/types';
+import { AnalysisResult } from '../types';
 import { 
   CheckCircleIcon, 
   ExclamationTriangleIcon, 

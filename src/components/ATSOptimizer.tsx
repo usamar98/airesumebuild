@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ResumeData } from '@/types';
+import { ResumeData } from '../types';
 import { CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon, SparklesIcon } from '@heroicons/react/24/outline';
 
 interface ATSScore {

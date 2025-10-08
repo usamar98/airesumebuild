@@ -192,6 +192,7 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
       return [
         { label: 'Resume Builder', path: '/builder', visible: true },
         { label: 'Resume Analyzer', path: '/analyzer', visible: true },
+        { label: 'Personal Site Generator', path: '/personal-site-generator/dashboard', visible: true },
         { label: 'Upwork Proposal', path: '/upwork-proposal', visible: true },
         { label: 'AI Chat', path: '/ai-assistant', visible: true },
         { label: 'Templates', path: '/templates', visible: true }
@@ -203,7 +204,7 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
       label: 'AI Assistant',
       icon: SparklesIcon,
       path: '/ai-assistant',
-      isActive: isActiveGroup(['/ai-assistant', '/builder', '/analyzer', '/upwork-proposal']),
+      isActive: isActiveGroup(['/ai-assistant', '/builder', '/analyzer', '/upwork-proposal', '/personal-site-generator']),
       subItems: getAIAssistantItems().filter(item => item.visible)
     });
 

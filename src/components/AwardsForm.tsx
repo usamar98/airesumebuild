@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PlusIcon, TrashIcon, SparklesIcon, TrophyIcon } from '@heroicons/react/24/outline';
-import { Award } from '@/types';
+import { Award } from '../types';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 

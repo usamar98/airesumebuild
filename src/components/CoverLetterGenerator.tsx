@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { SparklesIcon, DocumentTextIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
-import { ResumeData } from '@/types';
-import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
+import { ResumeData } from '../types';
+import { useSupabaseAuth } from '../contexts/SupabaseAuthContext';
 
 interface CoverLetterGeneratorProps {
   resumeData: ResumeData;

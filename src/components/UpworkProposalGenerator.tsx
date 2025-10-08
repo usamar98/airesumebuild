@@ -18,8 +18,8 @@ import {
   TagIcon,
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
-import { ResumeData } from '@/types';
-import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
+import { ResumeData } from '../types';
+import { useSupabaseAuth } from '../contexts/SupabaseAuthContext';
 
 interface UpworkProposalGeneratorProps {
   resumeData: ResumeData;

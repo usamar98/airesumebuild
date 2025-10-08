@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PlusIcon, TrashIcon, SparklesIcon, DocumentTextIcon, LightBulbIcon, MicrophoneIcon, HeartIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
-import { Publication, Patent, SpeakingEngagement, ProfessionalMembership } from '@/types';
+import { Publication, Patent, SpeakingEngagement, ProfessionalMembership } from '../types';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 

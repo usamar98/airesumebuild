@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PlusIcon, TrashIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
-import { Language } from '@/types';
+import { Language } from '../types';
 
 interface LanguagesFormProps {
   data: Language[];
